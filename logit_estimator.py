@@ -1,9 +1,10 @@
-# Prototype Logit Estimator
+# Prototype logit estimation class
 #
-# This class is a prototype logit estimator, designed for use for discrete choice analysis and modelling
+# This is a prototype class for estimating discrete choice logit models
 # Python 3.4 64 bit with SciPy
 
-# testing the creation of an empty matrix in numpy
-import numpy
-zero_mat = numpy.zeros((5,5))
-print(zero_mat)
+
+class LogitEstimator:
+    """A prototype class for logit estimation"""
+    def estimate_model(data_mat):
+        print(data_mat)
