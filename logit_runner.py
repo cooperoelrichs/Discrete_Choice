@@ -22,4 +22,10 @@ data_mat = numpy.loadtxt(open(data_csv_file, 'rb'),
 
 print(headers)
 
-logit_model = LogitEstimator.estimate_model(data_mat)
+data_x = data_mat[:, [1, 2, 3, 4, 5, 6]]
+data_y = data_mat[:, 7]
+
+print(data_x)
+print(data_y)
+
+logit_model = LogitEstimator.estimate_model(data_x, data_y)
