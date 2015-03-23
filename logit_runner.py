@@ -8,7 +8,7 @@ from logit_estimator import LogitEstimator
 # import pandas
 
 project_location = 'D:\Cooper\Python\Discrete_Choice'
-data_csv_file = project_location + '\\' + 'data.csv'
+data_csv_file = project_location + '\\' + 'data_multiclass.csv'
 
 # Reading the csv using Pandas might be faster
 # data_mat = pandas.io.parsers.read_csv(data_csv_file)
@@ -22,8 +22,9 @@ data_mat = numpy.loadtxt(open(data_csv_file, 'rb'),
 
 print(headers)
 
-data_x = data_mat[:, [1, 2, 3, 4, 5, 6]]
-data_y = data_mat[:, 7]
+# class_numbers = numpy.transpose(numpy.matrix([1, 2, 3]))
+data_x = data_mat[:, [1, 2, 3, 4, 5, 6, 7, 8]]
+data_y = data_mat[:, 9]
 
 print(data_x)
 print(data_y)
