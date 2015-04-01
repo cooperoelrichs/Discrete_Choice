@@ -30,4 +30,4 @@ data_y = data_mat[:, 7]
 # print(data_y)
 
 logit_model = LogitEstimator.estimate_scikit_learn_model(data_x, data_y)
-logit_model = LogitEstimator.estimate_logit_model(data_x, data_y)
+logit_model = LogitEstimator.estimate_home_made_model(data_x, data_y)
