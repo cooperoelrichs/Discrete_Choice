@@ -47,28 +47,30 @@ class LogisticRegressionEstimator:
                                         args=(x_mod, self.data_y),
                                         gtol=0.0000001)
 
-    def cost_function(self, theta, x, y):
-        # Predict results
-        predictions = numpy.dot(x, theta)
-        # Use the sigmoid function to calculate predicted probabilities
-        predicted_probs = 1 / (1 + numpy.exp(- predictions))
+    def sigmoid(self, x):
+        return 1 / (1 + numpy.exp(- x))
 
-        # print(numpy.sum(numpy.abs(theta)))
+    def utility(self, x, theta):
+        return numpy.dot(x, theta)
+
+    def cost_function(self, theta, x, y):
+        # Use the sigmoid function to calculate predicted probabilities
+        predicted_probs = self.sigmoid(self.utility(x, theta))
 
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
 
-        cost = (log_likelihood.mean() -
-                ((1 / self.c) * numpy.sum(numpy.absolute(theta))))
+        penalty = (1 / self.c) * numpy.sum(numpy.absolute(theta))
+        cost = log_likelihood.mean() + penalty
 
         return cost
 
     def gradient_function(self, theta, x, y):
-        # Predict results
-        predictions = numpy.dot(x, theta)
         # Use the sigmoid function to calculate predicted probabilities
-        predicted_probs = 1 / (1 + numpy.exp(- predictions))
+        predicted_probs = self.sigmoid(self.utility(x, theta))
 
         error = predicted_probs - y
-        gradient = numpy.dot(error, x) / y.size
+        penalty_gradient = (1 / self.c)  # Quick guess at the penalty - this needs to be fixed
+        gradient = (numpy.dot(error, x) + penalty_gradient) / y.size
+
         return gradient
