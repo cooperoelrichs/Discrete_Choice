@@ -23,7 +23,7 @@ data_mat = numpy.loadtxt(open(data_csv_file, 'rb'),
 print(headers)
 
 # class_numbers = numpy.transpose(numpy.matrix([1, 2, 3]))
-data_x = data_mat[:, [1, 2, 3, 4, 5, 6, 7]]
+data_x = data_mat[:, [1, 2, 3, 4, 5, 6]]
 data_y = data_mat[:, 7]
 
 # print(data_x)

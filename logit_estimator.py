@@ -4,6 +4,7 @@
 # Python 3.4 64 bit with SciPy
 
 from sklearn.linear_model import LogisticRegression
+from sklearn import preprocessing
 from scipy import optimize
 import numpy as numpy
 
@@ -12,10 +13,13 @@ class LogitEstimator:
     '''A prototype class for logit estimation'''
     def estimate_scikit_learn_model(data_x, data_y):
         '''Estimate a scikit-learn multinomial logit model'''
-        data_x_mod = numpy.append(numpy.ones((data_x.shape[0], 1)),
+        scaler = preprocessing.StandardScaler().fit(data_x)
+        data_x_trans = scaler.transform(data_x)
+
+        data_x_mod = numpy.append(numpy.ones((data_x_trans.shape[0], 1)),
                                   data_x, axis=1)
 
-        lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0000001,
+        lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0001,
                                   C=10, fit_intercept=True,
                                   class_weight='auto')
 
@@ -24,7 +28,10 @@ class LogitEstimator:
         print(lr_r.coef_)
 
     def estimate_home_made_model(data_x, data_y):
-        lr = LogisticRegressionEstimator(data_x, data_y, 10)
+        scaler = preprocessing.StandardScaler().fit(data_x)
+        data_x_trans = scaler.transform(data_x)
+
+        lr = LogisticRegressionEstimator(data_x_trans, data_y, 10)
         lr.estimate()
 
         print('And the paramaters are: ')
@@ -45,7 +52,7 @@ class LogisticRegressionEstimator:
         self.theta = optimize.fmin_bfgs(self.cost_function, self.theta,
                                         fprime=self.gradient_function,
                                         args=(x_mod, self.data_y),
-                                        gtol=0.0000001)
+                                        gtol=0.0001)
 
     def sigmoid(self, x):
         return 1 / (1 + numpy.exp(- x))
@@ -56,6 +63,9 @@ class LogisticRegressionEstimator:
     def cost_function(self, theta, x, y):
         # Use the sigmoid function to calculate predicted probabilities
         predicted_probs = self.sigmoid(self.utility(x, theta))
+
+        if 1 in predicted_probs:
+            exit('1 found')
 
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
