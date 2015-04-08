@@ -19,7 +19,7 @@ class LogitEstimator:
         data_x_mod = numpy.append(numpy.ones((data_x_trans.shape[0], 1)),
                                   data_x, axis=1)
 
-        lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0001,
+        lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
                                   C=10, fit_intercept=True,
                                   class_weight='auto')
 
@@ -43,16 +43,26 @@ class LogisticRegressionEstimator:
     def __init__(self, data_x, data_y, c):
         self.data_x = data_x
         self.data_y = data_y
-        self.theta = numpy.random.randn(self.data_x.shape[1] + 1)
+        self.n = data_x.shape[1] + 1
+        self.m = data_x.shape[0]
+        self.theta = numpy.random.randn(self.n)
         self.c = c
 
     def estimate(self):
         x_mod = numpy.append(numpy.ones((self.data_x.shape[0], 1)),
                              self.data_x, axis=1)
+
+        grad_check = optimize.check_grad(self.cost_function,
+                                         self.gradient_function,
+                                         self.theta, x_mod, self.data_y)
+
+        if grad_check > 5 * 10**-7:
+            exit('Gradient failed check with an error of ' + str(grad_check))
+
         self.theta = optimize.fmin_bfgs(self.cost_function, self.theta,
                                         fprime=self.gradient_function,
                                         args=(x_mod, self.data_y),
-                                        gtol=0.0001)
+                                        gtol=0.0000001)
 
     def sigmoid(self, x):
         return 1 / (1 + numpy.exp(- x))
@@ -70,7 +80,10 @@ class LogisticRegressionEstimator:
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
 
-        penalty = (1 / self.c) * numpy.sum(numpy.absolute(theta))
+        # penalty = ((1 / self.c) *
+        #            numpy.sum(numpy.absolute(theta)))  # l1
+        penalty = ((1 / (2 * self.c * self.m)) *
+                   numpy.sum(theta[1:] ** 2))  # l2
         cost = log_likelihood.mean() + penalty
 
         return cost
@@ -80,7 +93,10 @@ class LogisticRegressionEstimator:
         predicted_probs = self.sigmoid(self.utility(x, theta))
 
         error = predicted_probs - y
-        penalty_gradient = (1 / self.c)  # Quick guess at the penalty - this needs to be fixed
-        gradient = (numpy.dot(error, x) + penalty_gradient) / y.size
+
+        # penalty_gradient = (1 / self.c)  # l1
+        penalty_gradient = (1 / self.c) * theta  # l2
+        penalty_gradient[0] = 0
+        gradient = (numpy.dot(error, x) + penalty_gradient) / self.m
 
         return gradient
