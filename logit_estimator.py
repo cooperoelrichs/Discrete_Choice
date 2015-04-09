@@ -19,8 +19,9 @@ class LogitEstimator:
         data_x_mod = numpy.append(numpy.ones((data_x_trans.shape[0], 1)),
                                   data_x, axis=1)
 
+        # Add a ones column to X rather than fitting the intercept
         lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
-                                  C=10, fit_intercept=True,
+                                  C=10, fit_intercept=False,
                                   class_weight='auto')
 
         lr_r.fit(data_x_mod, data_y)
