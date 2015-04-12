@@ -11,59 +11,53 @@ import numpy as numpy
 
 class LogitEstimator:
     '''A prototype class for logit estimation'''
-    def estimate_scikit_learn_model(data_x, data_y):
-        '''Estimate a scikit-learn multinomial logit model'''
-        scaler = preprocessing.StandardScaler().fit(data_x)
-        data_x_trans = scaler.transform(data_x)
+    def scaler(X):
+        return preprocessing.StandardScaler().fit(X)
 
-        data_x_mod = numpy.append(numpy.ones((data_x_trans.shape[0], 1)),
-                                  data_x, axis=1)
+    def estimate_scikit_learn_model(X, y):
+        '''Estimate a scikit-learn multinomial logit model'''
+        X_mod = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
 
         # Add a ones column to X rather than fitting the intercept
-        lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
+        lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0000001,
                                   C=10, fit_intercept=False,
                                   class_weight='auto')
 
-        lr_r.fit(data_x_mod, data_y)
-        print('Coefficients for MNL')
-        print(lr_r.coef_)
+        lr_r.fit(X_mod, y)
+        return lr_r
 
-    def estimate_home_made_model(data_x, data_y):
-        scaler = preprocessing.StandardScaler().fit(data_x)
-        data_x_trans = scaler.transform(data_x)
-
-        lr = LogisticRegressionEstimator(data_x_trans, data_y, 10)
+    def estimate_home_made_model(X, y):
+        lr = LogisticRegressionEstimator(X, y, 10)
         lr.estimate()
-
-        print('And the paramaters are: ')
-        print(lr.theta)
+        return lr
 
 
 class LogisticRegressionEstimator:
-    '''A home made implimentation of logistic regression'''
-    def __init__(self, data_x, data_y, c):
-        self.data_x = data_x
-        self.data_y = data_y
-        self.n = data_x.shape[1] + 1
-        self.m = data_x.shape[0]
+    '''A home made implimentation of logist.C regression'''
+    def __init__(self, X, y, C):
+        self.X = X
+        self.y = y
+        self.n = X.shape[1] + 1
+        self.m = X.shape[0]
         self.theta = numpy.random.randn(self.n)
-        self.c = c
+        self.C = C
+        self.cost = None
 
     def estimate(self):
-        x_mod = numpy.append(numpy.ones((self.data_x.shape[0], 1)),
-                             self.data_x, axis=1)
+        X_mod = numpy.append(numpy.ones((self.X.shape[0], 1)),
+                             self.X, axis=1)
 
         grad_check = optimize.check_grad(self.cost_function,
                                          self.gradient_function,
-                                         self.theta, x_mod, self.data_y)
+                                         self.theta, X_mod, self.y)
 
         if grad_check > 5 * 10**-7:
             exit('Gradient failed check with an error of ' + str(grad_check))
 
         self.theta = optimize.fmin_bfgs(self.cost_function, self.theta,
                                         fprime=self.gradient_function,
-                                        args=(x_mod, self.data_y),
-                                        gtol=0.0000001)
+                                        args=(X_mod, self.y),
+                                        gtol=0.0000001, disp=False)
 
     def sigmoid(self, x):
         return 1 / (1 + numpy.exp(- x))
@@ -72,7 +66,6 @@ class LogisticRegressionEstimator:
         return numpy.dot(x, theta)
 
     def cost_function(self, theta, x, y):
-        # Use the sigmoid function to calculate predicted probabilities
         predicted_probs = self.sigmoid(self.utility(x, theta))
 
         if 1 in predicted_probs:
@@ -81,22 +74,23 @@ class LogisticRegressionEstimator:
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
 
-        # penalty = ((1 / self.c) *
-        #            numpy.sum(numpy.absolute(theta)))  # l1
-        penalty = ((1 / (2 * self.c * self.m)) *
-                   numpy.sum(theta[1:] ** 2))  # l2
-        cost = log_likelihood.mean() + penalty
+        # l1 - this is not working yet, the math appears to be incorrect
+        # penalty = ((1 / self.C) * numpy.sum(numpy.absolute(theta)))
 
+        # l2
+        penalty = ((1 / (2 * self.C * self.m)) * numpy.sum(theta[1:] ** 2))
+
+        cost = log_likelihood.mean() + penalty
+        self.cost = cost
         return cost
 
     def gradient_function(self, theta, x, y):
-        # Use the sigmoid function to calculate predicted probabilities
         predicted_probs = self.sigmoid(self.utility(x, theta))
-
         error = predicted_probs - y
 
-        # penalty_gradient = (1 / self.c)  # l1
-        penalty_gradient = (1 / self.c) * theta  # l2
+        # penalty_gradient = (1 / self.C) * numpy.ones(theta.shape)  # l1
+        penalty_gradient = (1 / self.C) * theta  # l2
+
         penalty_gradient[0] = 0
         gradient = (numpy.dot(error, x) + penalty_gradient) / self.m
 
