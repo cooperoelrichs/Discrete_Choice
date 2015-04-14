@@ -14,20 +14,20 @@ class LogitEstimator:
     def scaler(X):
         return preprocessing.StandardScaler().fit(X)
 
-    def estimate_scikit_learn_model(X, y):
+    def estimate_scikit_learn_model(X, y, C):
         '''Estimate a scikit-learn multinomial logit model'''
         X_mod = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
 
         # Add a ones column to X rather than fitting the intercept
         lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0000001,
-                                  C=10, fit_intercept=False,
+                                  C=C, fit_intercept=False,
                                   class_weight='auto')
 
         lr_r.fit(X_mod, y)
         return lr_r
 
-    def estimate_home_made_model(X, y):
-        lr = LogisticRegressionEstimator(X, y, 10)
+    def estimate_home_made_model(X, y, C):
+        lr = LogisticRegressionEstimator(X, y, C)
         lr.estimate()
         return lr
 
@@ -59,17 +59,18 @@ class LogisticRegressionEstimator:
                                         args=(X_mod, self.y),
                                         gtol=0.0000001, disp=False)
 
-    def sigmoid(self, x):
-        return 1 / (1 + numpy.exp(- x))
+    def sigmoid(self, matrix):
+        return 1 / (1 + numpy.exp(- matrix))
 
-    def utility(self, x, theta):
-        return numpy.dot(x, theta)
+    def utility(self, X, theta):
+        return numpy.dot(X, theta)
 
-    def cost_function(self, theta, x, y):
-        predicted_probs = self.sigmoid(self.utility(x, theta))
+    def log_func(self, X_i, y_i):
+        theta_T = numpy.transpose(self.theta)
+        return numpy.log(1 + numpy.exp(-1 * y_i * numpy.dot(theta_T, X_i)))
 
-        if 1 in predicted_probs:
-            exit('1 found')
+    def cost_function(self, theta, X, y):
+        predicted_probs = self.sigmoid(self.utility(X, theta))
 
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
@@ -80,18 +81,27 @@ class LogisticRegressionEstimator:
         # l2
         penalty = ((1 / (2 * self.C * self.m)) * numpy.sum(theta[1:] ** 2))
 
+        # Alternative math test
+        # partial_cost = numpy.sum(list(map(self.log_func, X, y)))
+        # reg_penalty = 0.5 * numpy.dot(numpy.transpose(theta[1:]), theta[1:])
+        # cost = self.C * partial_cost + reg_penalty
+
         cost = log_likelihood.mean() + penalty
         self.cost = cost
         return cost
 
-    def gradient_function(self, theta, x, y):
-        predicted_probs = self.sigmoid(self.utility(x, theta))
+    def gradient_function(self, theta, X, y):
+        predicted_probs = self.sigmoid(self.utility(X, theta))
         error = predicted_probs - y
 
         # penalty_gradient = (1 / self.C) * numpy.ones(theta.shape)  # l1
         penalty_gradient = (1 / self.C) * theta  # l2
-
         penalty_gradient[0] = 0
-        gradient = (numpy.dot(error, x) + penalty_gradient) / self.m
+
+        gradient = (numpy.dot(error, X) + penalty_gradient) / self.m
+
+        # Alternative math test
+        # penalty_gradient = numpy.sum(theta[1:])
+        # gradient = (self.C * numpy.dot(error, X) + penalty_gradient)
 
         return gradient

@@ -18,8 +18,8 @@ X, y = datasets.make_classification(10000,  2, 2, 0, 0, 2)
 scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
 
-lr_scikit = LogitEstimator.estimate_scikit_learn_model(X_scaled, y)
-lr_new = LogitEstimator.estimate_home_made_model(X_scaled, y)
+lr_scikit = LogitEstimator.estimate_scikit_learn_model(X_scaled, y, 0.01)
+lr_new = LogitEstimator.estimate_home_made_model(X_scaled, y, 0.01)
 
 X_mod = numpy.append(numpy.ones((X_scaled.shape[0], 1)), X_scaled, axis=1)
 lr_temp = LogisticRegressionEstimator(X_mod, y, 10)
