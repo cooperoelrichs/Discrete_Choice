@@ -32,12 +32,7 @@ class LogitEstimator:
         return lr
 
     def estimate_home_made_model_alt(X, y, C):
-        y_edit = numpy.copy(y)
-        y_edit[y_edit == 0] = -1
-
-        y_edit = numpy.array([-1, 1])
-        X = numpy.array([[-1], [1]])
-        lr = LogisticRegressionEstimator(X, y_edit, C)
+        lr = LogisticRegressionEstimator(X, y, C)
         lr.estimate_alt()
         return lr
 
@@ -62,7 +57,7 @@ class LogisticRegressionEstimator:
                                          self.theta, X_mod, self.y)
 
         if grad_check > 10**-6:
-            exit('Gradient failed check with an error of ' + str(grad_check))
+            print('Gradient failed check with an error of ' + str(grad_check))
 
         self.theta = optimize.fmin_bfgs(self.cost_function, self.theta,
                                         fprime=self.gradient_function,
@@ -107,7 +102,7 @@ class LogisticRegressionEstimator:
                                          self.theta, X_mod, self.y)
 
         if grad_check > 5 * 10**-7:
-            exit('Gradient failed check with an error of ' + str(grad_check))
+            print('Gradient failed check with an error of ' + str(grad_check))
 
         self.theta = optimize.fmin_bfgs(self.cost_function_alt, self.theta,
                                         fprime=self.gradient_function_alt,
@@ -135,10 +130,6 @@ class LogisticRegressionEstimator:
 
     def gradient_function_alt(self, theta, X, y):
         '''Alternative math test'''
-
-        theta = numpy.array([0.2358176, 0.77858431])
-        self.theta = theta
-
         penalty_gradient = numpy.copy(theta)
         penalty_gradient[0] = 0
         cost_gradient = numpy.sum(list(map(self.grad_math, X, y)))
