@@ -19,12 +19,13 @@ scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
 
 lr_scikit = LogitEstimator.estimate_scikit_learn_model(X_scaled, y, 0.01)
-lr_new = LogitEstimator.estimate_home_made_model(X_scaled, y, 0.01)
-lr_new_alt = LogitEstimator.estimate_home_made_model_alt(X_scaled, y, 0.01)
-
 X_mod = numpy.append(numpy.ones((X_scaled.shape[0], 1)), X_scaled, axis=1)
-lr_temp = LogisticRegressionEstimator(X_mod, y, 10)
+lr_temp = LogisticRegressionEstimator(X_mod, y, 0.01)
 lr_scikit_cost = lr_temp.cost_function(lr_scikit.coef_[0], X_mod, y)
+
+lr_new = LogitEstimator.estimate_home_made_model(X_scaled, y, 0.01)
+
+lr_new_alt = LogitEstimator.estimate_home_made_model_alt(X_scaled, y, 0.01)
 
 print('scikit-learn results')
 print(' - coefficients: ' + str(lr_scikit.coef_[0]))

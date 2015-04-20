@@ -64,12 +64,6 @@ class LogisticRegressionEstimator:
                                         args=(X_mod, self.y),
                                         gtol=0.0000001, disp=False)
 
-    def sigmoid(self, matrix):
-        return 1 / (1 + numpy.exp(- matrix))
-
-    def utility(self, X, theta):
-        return numpy.dot(X, theta)
-
     def cost_function(self, theta, X, y):
         predicted_probs = self.sigmoid(self.utility(X, theta))
 
@@ -81,6 +75,13 @@ class LogisticRegressionEstimator:
         cost = log_likelihood.mean() + penalty
         self.cost = cost
         return cost
+
+    def sigmoid(self, matrix):
+        return 1 / (1 + numpy.exp(- matrix))
+
+    def utility(self, X, theta):
+        return numpy.dot(X, theta)
+
 
     def gradient_function(self, theta, X, y):
         predicted_probs = self.sigmoid(self.utility(X, theta))
