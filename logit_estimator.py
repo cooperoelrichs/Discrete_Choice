@@ -76,12 +76,11 @@ class LogisticRegressionEstimator:
         self.cost = cost
         return cost
 
-    def sigmoid(self, matrix):
-        return 1 / (1 + numpy.exp(- matrix))
+    def sigmoid(self, vector):
+        return 1 / (1 + numpy.exp(- vector))
 
     def utility(self, X, theta):
         return numpy.dot(X, theta)
-
 
     def gradient_function(self, theta, X, y):
         predicted_probs = self.sigmoid(self.utility(X, theta))
@@ -95,6 +94,9 @@ class LogisticRegressionEstimator:
 
     # ===== Testing some alternative math (based on liblinear) =====
     def estimate_alt(self):
+        self.y_orig = numpy.copy(self.y)
+        self.y[self.y == 0] = -1
+
         X_mod = numpy.append(numpy.ones((self.X.shape[0], 1)),
                              self.X, axis=1)
 
@@ -110,6 +112,15 @@ class LogisticRegressionEstimator:
                                         args=(X_mod, self.y),
                                         gtol=0.0000001, disp=False)
 
+        print(list(map(numpy.sum, map(self.grad_math, X_mod, self.y)))[:3])
+
+        cost_gradient = numpy.sum(list(map(self.grad_math, X_mod, self.y)))
+        predicted_probs = self.sigmoid(self.utility(X_mod, self.theta))
+        error = predicted_probs - self.y
+        alt_cost_gradient = numpy.dot(error, X_mod)
+        print('Alt partial grad ' + str(cost_gradient))
+        print('Alt partial grad w standard func ' + str(alt_cost_gradient))
+
     def sigmoid_log(self, X_i, y_i):
         return numpy.log(self.inverted_sigmoid(X_i, y_i))
 
@@ -122,18 +133,23 @@ class LogisticRegressionEstimator:
 
     def cost_function_alt(self, theta, X, y):
         '''Alternative math test'''
+        self.theta = theta
         partial_cost = numpy.sum(list(map(self.sigmoid_log, X, y)))
-        penalty = 0.5 * numpy.dot(numpy.transpose(theta[1:]), theta[1:])
-        cost = penalty + self.C * partial_cost
 
+        penalty = 0.5 * numpy.dot(numpy.transpose(theta[1:]), theta[1:])
+
+        cost = (penalty + self.C * partial_cost) / self.m
         self.cost = cost
         return cost
 
     def gradient_function_alt(self, theta, X, y):
         '''Alternative math test'''
+        self.theta = theta
+        # cost_gradient = numpy.sum(list(map(self.grad_math, X, y)))
+        cost_gradient = numpy.array(list(map(numpy.sum, numpy.transpose(map(self.grad_math, X, y)))))
+
         penalty_gradient = numpy.copy(theta)
         penalty_gradient[0] = 0
-        cost_gradient = numpy.sum(list(map(self.grad_math, X, y)))
 
-        gradient = (penalty_gradient + self.C * cost_gradient)
+        gradient = (penalty_gradient + self.C * cost_gradient) / self.m
         return gradient
