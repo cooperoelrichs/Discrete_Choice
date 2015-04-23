@@ -12,7 +12,7 @@ import time
 project_location = 'D:\Cooper\Python\Discrete_Choice'
 data_csv_file = project_location + '\\' + 'data.csv'
 
-X, y = datasets.make_classification(10000, 2, 2, 0, 0, 2)
+X, y = datasets.make_classification(1000, 2, 2, 0, 0, 2)
 C = 0.01
 # print(X)
 # print(y)
