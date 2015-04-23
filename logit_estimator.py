@@ -19,7 +19,7 @@ class LogitEstimator:
         X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
 
         # Add a ones column to X rather than fitting the intercept
-        lr_r = LogisticRegression(penalty='l1', dual=False, tol=0.0000001,
+        lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
                                   C=C, fit_intercept=False,
                                   class_weight='auto')
 
@@ -47,8 +47,6 @@ class LogisticRegressionEstimator:
         self.theta = numpy.random.randn(self.n)
         self.C = C
         self.cost = None
-        self.grad_math_V = None
-        self.numpy_sum_V = None
 
     def estimate(self):
         self.gradient_check(self.cost_function,
@@ -102,7 +100,6 @@ class LogisticRegressionEstimator:
 
     # ===== Testing some alternative math (based on liblinear) =====
     def estimate_alt(self):
-        self.vectorise_funcs()
         self.y[self.y == 0] = -1  # Assumes y vector is (1, 0)
 
         self.gradient_check(self.cost_function_alt,
@@ -117,8 +114,14 @@ class LogisticRegressionEstimator:
     def cost_function_alt(self, theta, X, y):
         '''Alternative math test'''
         self.theta = theta
-        objective_cost = numpy.sum(list(map(self.sigmoid_log, X, y)))
-        regularisation = 0.5 * numpy.dot(numpy.transpose(theta[1:]), theta[1:])
+
+        objective_cost = 0
+        for i in range(0, self.m):
+            objective_cost += numpy.log(self.inverted_sigmoid(X[i], y[i]))
+
+        regularisation = 0
+        for j in range(1, self.n):
+            regularisation += 0.5 * theta[j] ** 2
 
         cost = (regularisation / self.C + objective_cost) / self.m
         self.cost = cost
@@ -127,11 +130,12 @@ class LogisticRegressionEstimator:
     def gradient_function_alt(self, theta, X, y):
         '''Alternative math test'''
         self.theta = theta
-        # grad_mat = numpy.array(list(map(self.grad_math, X, y)))
-        grad_mat = self.grad_math_V(X, y)
-        grad_mat_T = numpy.transpose(grad_mat)
-        # objective_grad = numpy.array(list(map(numpy.sum, grad_mat_T)))
-        objective_grad = self.numpy_sum_V(grad_mat_T)
+
+        objective_grad = numpy.zeros_like(theta)
+        for i in range(0, self.m):
+            grad_mat = ((1 / self.inverted_sigmoid(X[i], y[i])) - 1) * y[i] * X[i]
+            for j in range(0, self.n):
+                objective_grad[j] += grad_mat[j]
 
         regularisation_grad = numpy.copy(theta)
         regularisation_grad[0] = 0
@@ -139,16 +143,8 @@ class LogisticRegressionEstimator:
         gradient = (regularisation_grad / self.C + objective_grad) / self.m
         return gradient
 
-    def sigmoid_log(self, X_i, y_i):
-        return numpy.log(self.inverted_sigmoid(X_i, y_i))
-
     def inverted_sigmoid(self, X_i, y_i):
-        theta_T = numpy.transpose(self.theta)
-        return 1 + numpy.exp(-1 * y_i * numpy.dot(theta_T, X_i))
-
-    def grad_math(self, X_i, y_i):
-        return numpy.dot(((1 / self.inverted_sigmoid(X_i, y_i)) - 1) * y_i, X_i)
-
-    def vectorise_funcs(self):
-        self.grad_math_V = numpy.vectorize(self.grad_math, otypes=[numpy.float])
-        self.numpy_sum_V = numpy.vectorize(numpy.sum, otypes=[numpy.float])
+        sum = 0
+        for j in range(0, self.n):
+            sum += self.theta[j] * X_i[j]
+        return 1 + numpy.exp(-1 * y_i * sum)
