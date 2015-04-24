@@ -36,6 +36,11 @@ class LogitEstimator:
         lr.estimate_alt()
         return lr
 
+# TODO:
+# 1. Split LRE into LRE and LRE_alt, both of which will inherit
+#    from a general class
+# 2. Multi-class!!!
+#    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
 
 class LogisticRegressionEstimator:
     '''A home made implimentation of logist.C regression'''
