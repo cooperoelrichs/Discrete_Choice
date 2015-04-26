@@ -78,7 +78,13 @@ class MultiNomialLogitEstimator(ModelEstimator):
         '''No prep work required'''
 
     def cost_function(self, theta, X, y):
-        '''Calculate some MNL costs here'''
+        '''
+        Calculate some MNL costs here
+        y(i) is {1, 2, ..., k}
+        '''
+        for i in range(0, self.m):
+            for j in range(0, self.n):
+                indicator_func(self.y[i], j) * log(...)
 
 
 class LogisticRegressionEstimator(ModelEstimator):
