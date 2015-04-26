@@ -10,7 +10,7 @@ import numpy as numpy
 
 
 class LogitEstimator:
-    '''A prototype class for logit estimation'''
+    '''This class just prepares and runs actual model estimation classes'''
     def scaler(X):
         return preprocessing.StandardScaler().fit(X)
 
@@ -32,17 +32,16 @@ class LogitEstimator:
         return lr
 
     def estimate_home_made_model_alt(X, y, C):
-        lr = LogisticRegressionEstimator(X, y, C)
-        lr.estimate_alt()
+        lr = AltLogisticRegressionEstimator(X, y, C)
+        lr.estimate()
         return lr
 
 # TODO:
-# 1. Split LRE into LRE and LRE_alt, both of which will inherit
-#    from a general class
 # 2. Multi-class!!!
 #    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
 
-class LogisticRegressionEstimator:
+
+class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
     def __init__(self, X, y, C):
         self.X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
@@ -54,6 +53,7 @@ class LogisticRegressionEstimator:
         self.cost = None
 
     def estimate(self):
+        self.prep_work()
         self.gradient_check(self.cost_function,
                             self.gradient_function,
                             self.theta, self.X, self.y)
@@ -62,6 +62,28 @@ class LogisticRegressionEstimator:
                                         fprime=self.gradient_function,
                                         args=(self.X, self.y),
                                         gtol=0.0000001, disp=False)
+
+    def gradient_check(self, cost_function, gradient_function,
+                       theta, X, y):
+        grad_check = optimize.check_grad(cost_function,
+                                         gradient_function,
+                                         theta, X, y)
+
+        if grad_check > 5 * 10**-7:
+            print('Gradient failed check with an error of ' + str(grad_check))
+
+
+class MultiNomialLogitEstimator(ModelEstimator):
+    def prep_work(self):
+        '''No prep work required'''
+
+    def cost_function(self, theta, X, y):
+        '''Calculate some MNL costs here'''
+
+
+class LogisticRegressionEstimator(ModelEstimator):
+    def prep_work(self):
+        '''No prep work required'''
 
     def cost_function(self, theta, X, y):
         predicted_probs = self.predict_probs(theta, X)
@@ -94,30 +116,13 @@ class LogisticRegressionEstimator:
     def predict_probs(self, theta, X):
         return self.sigmoid(self.utility(theta, X))
 
-    def gradient_check(self, cost_function_alt, gradient_function_alt,
-                       theta, X, y):
-        grad_check = optimize.check_grad(cost_function_alt,
-                                         gradient_function_alt,
-                                         theta, X, y)
 
-        if grad_check > 5 * 10**-7:
-            print('Gradient failed check with an error of ' + str(grad_check))
+class AltLogisticRegressionEstimator(ModelEstimator):
+    '''Testing some alternative math (based on liblinear)'''
+    def prep_work(self):
+        self.y[self.y == 0] = -1  # y vector must be (1, -1)
 
-    # ===== Testing some alternative math (based on liblinear) =====
-    def estimate_alt(self):
-        self.y[self.y == 0] = -1  # Assumes y vector is (1, 0)
-
-        self.gradient_check(self.cost_function_alt,
-                            self.gradient_function_alt,
-                            self.theta, self.X, self.y)
-
-        self.theta = optimize.fmin_bfgs(self.cost_function_alt, self.theta,
-                                        fprime=self.gradient_function_alt,
-                                        args=(self.X, self.y),
-                                        gtol=0.0000001, disp=False)
-
-    def cost_function_alt(self, theta, X, y):
-        '''Alternative math test'''
+    def cost_function(self, theta, X, y):
         self.theta = theta
 
         objective_cost = 0
@@ -132,13 +137,13 @@ class LogisticRegressionEstimator:
         self.cost = cost
         return cost
 
-    def gradient_function_alt(self, theta, X, y):
-        '''Alternative math test'''
+    def gradient_function(self, theta, X, y):
         self.theta = theta
 
         objective_grad = numpy.zeros_like(theta)
         for i in range(0, self.m):
-            grad_mat = ((1 / self.inverted_sigmoid(X[i], y[i])) - 1) * y[i] * X[i]
+            grad_mat = (((1 / self.inverted_sigmoid(X[i], y[i])) - 1) *
+                        y[i] * X[i])
             for j in range(0, self.n):
                 objective_grad[j] += grad_mat[j]
 
