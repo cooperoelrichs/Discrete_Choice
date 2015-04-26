@@ -9,6 +9,13 @@ import numpy
 import time
 # import pandas
 
+
+def print_run_results(model_name, coefs, cost, run_time):
+    print('%s results' % model_name)
+    print(' - coefficients: %s' % coefs)
+    print(' - cost: %.10f' % cost)
+    print(' - run time: %.10f' % run_time)
+
 project_location = 'D:\Cooper\Python\Discrete_Choice'
 data_csv_file = project_location + '\\' + 'data.csv'
 
@@ -36,15 +43,10 @@ start = time.clock()
 lr_new_alt = LogitEstimator.estimate_home_made_model_alt(X_scaled, y, C)
 alt_time = time.clock() - start
 
-print('scikit-learn results')
-print(' - coefficients: ' + str(lr_scikit.coef_[0]))
-print(' - cost: ' + str(lr_scikit_cost))
-print(' - run time: ' + str(scikit_time))
-print('my results')
-print(' - coefficients: ' + str(lr_new.theta))
-print(' - cost: ' + str(lr_new.cost))
-print(' - run time: ' + str(new_time))
-print('my alt results')
-print(' - coefficients: ' + str(lr_new_alt.theta))
-print(' - cost: ' + str(lr_new_alt.cost))
-print(' - run time: ' + str(alt_time))
+
+print_run_results('scikit-learn', lr_scikit.coef_[0],
+                  lr_scikit_cost, scikit_time)
+print_run_results('my', lr_new.theta,
+                  lr_new.cost, new_time)
+print_run_results('my alt', lr_new_alt.theta,
+                  lr_new_alt.cost, alt_time)
