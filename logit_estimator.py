@@ -4,6 +4,7 @@
 # Python 3.4 64 bit with SciPy
 
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelBinarizer
 from sklearn import preprocessing
 from scipy import optimize
 import numpy as numpy
@@ -36,6 +37,11 @@ class LogitEstimator:
         lr.estimate()
         return lr
 
+    def estimate_multinomial_model(X, y, C):
+        lr = MultiNomialLogitEstimator(X, y, C)
+        lr.cost_function(lr.theta, lr.X, lr.y)
+        return lr
+
 # TODO:
 # 2. Multi-class!!!
 #    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
@@ -45,10 +51,11 @@ class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
     def __init__(self, X, y, C):
         self.X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
-        self.y = y
+        self.y = LabelBinarizer().fit_transform(y)
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
-        self.theta = numpy.random.randn(self.n)
+        self.k = self.y.shape[1]
+        self.theta = numpy.random.randn(self.k, self.n)
         self.C = C
         self.cost = None
 
@@ -82,9 +89,20 @@ class MultiNomialLogitEstimator(ModelEstimator):
         Calculate some MNL costs here
         y(i) is {1, 2, ..., k}
         '''
+        cost_sum = 0
         for i in range(0, self.m):
-            for j in range(0, self.n):
-                indicator_func(self.y[i], j) * log(...)
+            for j in range(0, self.k):
+                numerator = numpy.exp(numpy.dot(X[i], theta[j]))
+                denominator = 0
+                for l in range(0, self.k):
+                    denominator += numpy.exp(numpy.dot(X[i], theta[l]))
+                cost_sum += y[i, j] * numpy.log(numerator / denominator)
+
+        self.cost = cost_sum / self.m
+        return self.cost
+
+    def gradient_function(self, theta, X, y):
+        '''Calc some graidents here'''
 
 
 class LogisticRegressionEstimator(ModelEstimator):
