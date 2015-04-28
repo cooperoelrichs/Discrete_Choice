@@ -20,3 +20,4 @@ mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
 alt_time = time.clock() - start
 
 print_run_results('MNL', mnl.theta, mnl.cost, alt_time)
+print(mnl.grad)

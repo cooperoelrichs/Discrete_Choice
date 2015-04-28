@@ -39,7 +39,9 @@ class LogitEstimator:
 
     def estimate_multinomial_model(X, y, C):
         lr = MultiNomialLogitEstimator(X, y, C)
-        lr.cost_function(lr.theta, lr.X, lr.y)
+        lr.estimate()
+        # lr.cost_function(lr.theta, lr.X, lr.y)
+        # lr.gradient_function(lr.theta, lr.X, lr.y)
         return lr
 
 # TODO:
@@ -103,6 +105,16 @@ class MultiNomialLogitEstimator(ModelEstimator):
 
     def gradient_function(self, theta, X, y):
         '''Calc some graidents here'''
+        gradient = numpy.zeros_like(theta)
+        for i in range(0, self.m):
+            for j in range(0, self.k):
+                numerator = numpy.exp(numpy.dot(X[i], theta[j]))
+                denominator = 0
+                for l in range(0, self.k):
+                    denominator += numpy.exp(numpy.dot(X[i], theta[l]))
+                gradient[j] += X[i] * (y[i, j] - numerator / denominator)
+        self.grad = gradient
+        return gradient
 
 
 class LogisticRegressionEstimator(ModelEstimator):
