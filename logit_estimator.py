@@ -58,16 +58,18 @@ class ModelEstimator(object):
         self.m = X.shape[0]
         self.k = self.y.shape[1]
         self.theta = numpy.random.randn(self.k, self.n)
+        self.theta_f = numpy.ravel(self.theta)
         self.C = C
         self.cost = None
+        self.iteration = 0
 
     def estimate(self):
         self.prep_work()
-        self.gradient_check(self.cost_function,
-                            self.gradient_function,
-                            self.theta, self.X, self.y)
+        # self.gradient_check(self.cost_function,
+        #                     self.gradient_function,
+        #                     self.theta, self.X, self.y)
 
-        self.theta = optimize.fmin_bfgs(self.cost_function, self.theta,
+        self.theta = optimize.fmin_bfgs(self.cost_function, self.theta_f,
                                         fprime=self.gradient_function,
                                         args=(self.X, self.y),
                                         gtol=0.0000001, disp=False)
@@ -86,11 +88,17 @@ class MultiNomialLogitEstimator(ModelEstimator):
     def prep_work(self):
         '''No prep work required'''
 
-    def cost_function(self, theta, X, y):
+    def cost_function(self, theta_f, X, y):
         '''
-        Calculate some MNL costs here
-        y(i) is {1, 2, ..., k}
+        m - number of data points
+        n - number of features
+        k - number of classes
+        X - m * n
+        y - m * k
+        theta - k * n
         '''
+        theta = numpy.reshape(theta_f, (self.k, self.n))
+        self.theta = theta
         cost_sum = 0
         for i in range(0, self.m):
             for j in range(0, self.k):
@@ -100,21 +108,42 @@ class MultiNomialLogitEstimator(ModelEstimator):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
                 cost_sum += y[i, j] * numpy.log(numerator / denominator)
 
-        self.cost = cost_sum / self.m
-        return self.cost
+        cost = cost_sum / self.m
+        self.cost = cost
+        return cost
 
-    def gradient_function(self, theta, X, y):
+    def gradient_function(self, theta_f, X, y):
         '''Calc some graidents here'''
+        theta = numpy.reshape(theta_f, (self.k, self.n))
+        print('------------------------------------')
+        print(theta_f)
+        print(theta)
+        print(numpy.sum(theta_f))
+        print(numpy.sum(theta))
+        print('====================================')
+
+        self.theta = theta
         gradient = numpy.zeros_like(theta)
         for i in range(0, self.m):
             for j in range(0, self.k):
                 numerator = numpy.exp(numpy.dot(X[i], theta[j]))
+                print('~~~~~~')
+                print(numerator)
                 denominator = 0
                 for l in range(0, self.k):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
+                print(denominator)
+                print(X[i] * (y[i, j] - numerator / denominator))
+                print('~~~~~~')
                 gradient[j] += X[i] * (y[i, j] - numerator / denominator)
+
+        print(gradient)
+        self.iteration += 1
+        if self.iteration == 1:
+            exit()
+
         self.grad = gradient
-        return gradient
+        return numpy.ravel(self.grad)
 
 
 class LogisticRegressionEstimator(ModelEstimator):
@@ -122,6 +151,7 @@ class LogisticRegressionEstimator(ModelEstimator):
         '''No prep work required'''
 
     def cost_function(self, theta, X, y):
+        self.theta = theta
         predicted_probs = self.predict_probs(theta, X)
         log_likelihood = ((-1 * y) * numpy.log(predicted_probs) -
                           (1 - y) * numpy.log(1 - predicted_probs))
@@ -133,6 +163,7 @@ class LogisticRegressionEstimator(ModelEstimator):
         return cost
 
     def gradient_function(self, theta, X, y):
+        self.theta = theta
         predicted_probs = self.predict_probs(theta, X)
         error = predicted_probs - y
         objective_grad = numpy.dot(error, X)
