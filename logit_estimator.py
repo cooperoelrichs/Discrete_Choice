@@ -18,6 +18,7 @@ class LogitEstimator:
     def estimate_scikit_learn_model(X, y, C):
         '''Estimate a scikit-learn multinomial logit model'''
         X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
+        X[0, 0] = 0
 
         # Add a ones column to X rather than fitting the intercept
         lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
@@ -53,11 +54,13 @@ class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
     def __init__(self, X, y, C):
         self.X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
+        self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        self.theta = numpy.random.randn(self.k, self.n)
+        # self.theta = numpy.random.randn(self.k, self.n)
+        self.theta = numpy.zeros((self.k, self.n))
         self.theta_f = numpy.ravel(self.theta)
         self.C = C
         self.cost = None
@@ -65,14 +68,14 @@ class ModelEstimator(object):
 
     def estimate(self):
         self.prep_work()
-        # self.gradient_check(self.cost_function,
-        #                     self.gradient_function,
-        #                     self.theta, self.X, self.y)
+        self.gradient_check(self.cost_function,
+                            self.gradient_function,
+                            self.theta_f, self.X, self.y)
 
-        self.theta = optimize.fmin_bfgs(self.cost_function, self.theta_f,
-                                        fprime=self.gradient_function,
-                                        args=(self.X, self.y),
-                                        gtol=0.0000001, disp=False)
+        self.theta_f = optimize.fmin_bfgs(self.cost_function, self.theta_f,
+                                          fprime=self.gradient_function,
+                                          args=(self.X, self.y),
+                                          gtol=0.0000001, disp=False)
 
     def gradient_check(self, cost_function, gradient_function,
                        theta, X, y):
@@ -97,50 +100,43 @@ class MultiNomialLogitEstimator(ModelEstimator):
         y - m * k
         theta - k * n
         '''
+
         theta = numpy.reshape(theta_f, (self.k, self.n))
         self.theta = theta
-        cost_sum = 0
+        cost = 0
         for i in range(0, self.m):
             for j in range(0, self.k):
                 numerator = numpy.exp(numpy.dot(X[i], theta[j]))
                 denominator = 0
                 for l in range(0, self.k):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
-                cost_sum += y[i, j] * numpy.log(numerator / denominator)
+                cost += y[i, j] * numpy.log(numerator / denominator)
 
-        cost = cost_sum / self.m
+        regularisation = (0.5 / self.C * numpy.sum(theta[1:] ** 2))
+        cost = (-1 * cost + regularisation) / self.m
         self.cost = cost
         return cost
 
     def gradient_function(self, theta_f, X, y):
         '''Calc some graidents here'''
         theta = numpy.reshape(theta_f, (self.k, self.n))
-        print('------------------------------------')
-        print(theta_f)
-        print(theta)
-        print(numpy.sum(theta_f))
-        print(numpy.sum(theta))
-        print('====================================')
-
         self.theta = theta
         gradient = numpy.zeros_like(theta)
         for i in range(0, self.m):
             for j in range(0, self.k):
                 numerator = numpy.exp(numpy.dot(X[i], theta[j]))
-                print('~~~~~~')
-                print(numerator)
                 denominator = 0
                 for l in range(0, self.k):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
-                print(denominator)
-                print(X[i] * (y[i, j] - numerator / denominator))
-                print('~~~~~~')
+                # print(numerator)
+                # print(denominator)
+                # print(X[i] * (y[i, j] - numerator / denominator))
+                # print('~~~~~~')
                 gradient[j] += X[i] * (y[i, j] - numerator / denominator)
 
-        print(gradient)
-        self.iteration += 1
-        if self.iteration == 1:
-            exit()
+        penalty_gradient = (1 / self.C) * theta / self.m
+        penalty_gradient[0] = 0
+        gradient = (-1 * gradient + penalty_gradient) / self.m
 
         self.grad = gradient
         return numpy.ravel(self.grad)
