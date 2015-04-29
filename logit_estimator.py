@@ -48,6 +48,7 @@ class LogitEstimator:
 # TODO:
 # 2. Multi-class!!!
 #    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
+# 3. Constants on my MNL are weird and really small
 
 
 class ModelEstimator(object):
