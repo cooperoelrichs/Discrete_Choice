@@ -1,11 +1,14 @@
 from sklearn import datasets
 from logit_estimator import LogitEstimator
+from logit_estimator import MultiNomialLogitEstimator
 import time
+import numpy
 
 
 def print_run_results(model_name, coefs, cost, run_time):
     print('%s results' % model_name)
-    print(' - coefficients: %s' % coefs)
+    print(' - coefficients:')
+    print(coefs)
     print(' - cost: %.10f' % cost)
     print(' - run time: %.10f' % run_time)
 
@@ -16,8 +19,16 @@ scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
 
 start = time.clock()
-mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
-alt_time = time.clock() - start
+sk_mnl = LogitEstimator.estimate_scikit_learn_model(X_scaled, y, C)
+sk_mnl_time = time.clock() - start
 
-print_run_results('MNL', mnl.theta, mnl.cost, alt_time)
-print(mnl.grad)
+mnl_temp = MultiNomialLogitEstimator(X, y, C)
+sk_mnl_cost = mnl_temp.cost_function(numpy.ravel(sk_mnl.coef_),
+                                     mnl_temp.X, mnl_temp.y)
+
+start = time.clock()
+my_mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
+my_mnl_time = time.clock() - start
+
+print_run_results('scikit-learn MNL', sk_mnl.coef_, sk_mnl_cost, sk_mnl_time)
+print_run_results('my MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
