@@ -60,8 +60,8 @@ class ModelEstimator(object):
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        # self.theta = numpy.random.randn(self.k, self.n)
-        self.theta = numpy.zeros((self.k, self.n))
+        self.theta = numpy.random.randn(self.k, self.n)
+        # self.theta = numpy.zeros((self.k, self.n))
         self.theta_f = numpy.ravel(self.theta)
         self.C = C
         self.cost = None
@@ -84,7 +84,7 @@ class ModelEstimator(object):
                                          gradient_function,
                                          theta, X, y)
 
-        if grad_check > 5 * 10**-7:
+        if grad_check > 1 * 10**-6:
             print('Gradient failed check with an error of ' + str(grad_check))
 
 
@@ -113,7 +113,7 @@ class MultiNomialLogitEstimator(ModelEstimator):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
                 cost += y[i, j] * numpy.log(numerator / denominator)
 
-        regularisation = (0.5 / self.C * numpy.sum(theta[1:] ** 2))
+        regularisation = (0.5 / self.C * numpy.sum(theta[:, 1:] ** 2))
         cost = (-1 * cost + regularisation) / self.m
         self.cost = cost
         return cost
@@ -129,14 +129,11 @@ class MultiNomialLogitEstimator(ModelEstimator):
                 denominator = 0
                 for l in range(0, self.k):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
-                # print(numerator)
-                # print(denominator)
-                # print(X[i] * (y[i, j] - numerator / denominator))
-                # print('~~~~~~')
                 gradient[j] += X[i] * (y[i, j] - numerator / denominator)
 
-        penalty_gradient = (1 / self.C) * theta / self.m
-        penalty_gradient[0] = 0
+        penalty_gradient = (1 / self.C) * theta
+        penalty_gradient[:, 0] = 0
+        # print(penalty_gradient)
         gradient = (-1 * gradient + penalty_gradient) / self.m
 
         self.grad = gradient
