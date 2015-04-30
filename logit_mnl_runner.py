@@ -9,8 +9,8 @@ def print_run_results(model_name, coefs, cost, run_time):
     print('%s results' % model_name)
     print(' - coefficients:')
     print(coefs)
-    print(' - cost: %.10f' % cost)
-    print(' - run time: %.10f' % run_time)
+    print(' - cost: %.6f' % cost)
+    print(' - run time: %.6f' % run_time)
 
 X, y = datasets.make_classification(1000, 2, 2, 0, 0, 4, 1)
 C = 0.01

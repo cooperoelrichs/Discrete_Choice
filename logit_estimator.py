@@ -18,12 +18,14 @@ class LogitEstimator:
     def estimate_scikit_learn_model(X, y, C):
         '''Estimate a scikit-learn multinomial logit model'''
         X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
-        X[0, 0] = 0
+        # X[0, 0] = 0
 
         # Add a ones column to X rather than fitting the intercept
         lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
                                   C=C, fit_intercept=False,
-                                  class_weight='auto')
+                                  class_weight='auto',
+                                  multi_class='multinomial',
+                                  solver='lbfgs')
 
         lr_r.fit(X, y)
         return lr_r
@@ -55,7 +57,7 @@ class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
     def __init__(self, X, y, C):
         self.X = numpy.append(numpy.ones((X.shape[0], 1)), X, axis=1)
-        self.X[0, 0] = 0
+        # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
@@ -113,13 +115,13 @@ class MultiNomialLogitEstimator(ModelEstimator):
                     denominator += numpy.exp(numpy.dot(X[i], theta[l]))
                 cost += y[i, j] * numpy.log(numerator / denominator)
 
-        regularisation = (0.5 / self.C * numpy.sum(theta[:, 1:] ** 2))
+        # regularisation = (0.5 / self.C * numpy.sum(theta[:, 1:] ** 2))
+        regularisation = (0.5 / self.C * numpy.sum(theta ** 2))
         cost = (-1 * cost + regularisation) / self.m
         self.cost = cost
         return cost
 
     def gradient_function(self, theta_f, X, y):
-        '''Calc some graidents here'''
         theta = numpy.reshape(theta_f, (self.k, self.n))
         self.theta = theta
         gradient = numpy.zeros_like(theta)
@@ -132,7 +134,7 @@ class MultiNomialLogitEstimator(ModelEstimator):
                 gradient[j] += X[i] * (y[i, j] - numerator / denominator)
 
         penalty_gradient = (1 / self.C) * theta
-        penalty_gradient[:, 0] = 0
+        # penalty_gradient[:, 0] = 0
         # print(penalty_gradient)
         gradient = (-1 * gradient + penalty_gradient) / self.m
 
