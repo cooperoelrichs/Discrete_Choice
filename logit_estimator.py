@@ -90,7 +90,23 @@ class ModelEstimator(object):
             print('Gradient failed check with an error of ' + str(grad_check))
 
 
+class NestedLogitEstimator(ModelEstimator):
+    '''Nested Logit!'''
+    def prep_work(self):
+        '''Nothing to see here'''
+
+    def cost_function(self, theta_f, X, y):
+        '''Costs calc'''
+
+    def gradient_function(self, theta_f, X, y):
+        '''Gradient calc'''
+
+
 class MultiNomialLogitEstimator(ModelEstimator):
+    '''
+    Based on:
+    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
+    '''
     def prep_work(self):
         '''No prep work required'''
 
