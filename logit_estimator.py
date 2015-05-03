@@ -99,6 +99,12 @@ class NestedLogitEstimator(ModelEstimator):
     in Kennith Train's book).
     i.e. The sum of the log of the probality (of the chosen
     alternative) for each data point.
+
+    Good resources:
+        1. http://www.civil.iitb.ac.in/~kvkrao/CE%20780%20
+           Behavioural%20Travel%20Modelling/NL.pdf
+        2. http://eml.berkeley.edu/books/train1201.pdf
+        3. http://en.wikipedia.org/wiki/Maximum_likelihood
     '''
     def prep_work(self):
         '''Nothing to see here'''
