@@ -91,7 +91,15 @@ class ModelEstimator(object):
 
 
 class NestedLogitEstimator(ModelEstimator):
-    '''Nested Logit!'''
+    '''Nested Logit!
+
+    Plan of attack:
+    Use the Maximum-likelihood loss function on the choice
+    probability funciton for nested logit (formula 4.2
+    in Kennith Train's book).
+    i.e. The sum of the log of the probality (of the chosen
+    alternative) for each data point.
+    '''
     def prep_work(self):
         '''Nothing to see here'''
 
