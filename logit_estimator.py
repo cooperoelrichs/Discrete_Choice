@@ -93,18 +93,17 @@ class ModelEstimator(object):
 class NestedLogitEstimator(ModelEstimator):
     '''Nested Logit!
 
-    Plan of attack:
-    Use the Maximum-likelihood loss function on the choice
-    probability funciton for nested logit (formula 4.2
-    in Kennith Train's book).
-    i.e. The sum of the log of the probality (of the chosen
-    alternative) for each data point.
-
     Good resources:
         1. http://www.civil.iitb.ac.in/~kvkrao/CE%20780%20
            Behavioural%20Travel%20Modelling/NL.pdf
         2. http://eml.berkeley.edu/books/train1201.pdf
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
+
+    Plan:
+        Start this IMMEDIATELY!
+        1. Start with only one nest level and use formula (4.2) from
+           K. Train, http://eml.berkeley.edu/books/train1201.pdf
+        2. Estimate the gradient for this function numerically!
     '''
     def prep_work(self):
         '''Nothing to see here'''
