@@ -114,25 +114,31 @@ class NestedLogitEstimator(ModelEstimator):
         self.theta = theta
 
         # Two level NL
-        # Need to logsum the probabilities!
+        nest_sums = calc_nest_sums(theta, X, y)
+        log_sums = np.zeros(self.m)
         for i in range(0, self.m):
-            # lda is the list of the indipendence paramaters
-            j = y[i]  # Get the index of the chosen, assumed y is [1, ..., k]
-            l = self.nests[j]
-            V = np.dot(X[i], theta[j])
-            num = (np.exp(V / lda[l]) *
-                   nest_sum[l] ** (lda[l] - 1)
-                   # nest_sum is an array of the sum of each exp(V/lambda)
-                   # for all options in a nest
-            den = np.sum(nest_sum[l_2] ** lda[l_2])
+            log_sums[i] = self.probability(theta, X[i], y[i], lda, nest_sums)
 
-            P = num / den
-            # P = estimated probability for the option j
-            # Where j is the chosen option in experiment i, and j
-            # is in nest l
+        self.cost = np.sum(log_sums) / self.m
+        return self.cost
 
     def grat_function(self, theta_f, X, y):
         '''Gradient calc'''
+
+    def probability(self, theta, X_i, y_i, lda, nest_sums):
+        # lda is the list of the indipendence paramaters
+        j = y_i  # Get the index of the chosen, assumed y is [k_1, ..., k_K]
+        l = self.nests[j]
+        V = np.dot(X_i, theta[j])
+        num = np.exp(V / lda[l]) * nest_sums[l] ** (lda[l] - 1)
+        # nest_sum is an array of the sum of each exp(V/lambda)
+        # for all options in a nest
+        den = np.sum(nest_sums[l_2] ** lda[l_2])
+
+        return num / den
+        # P = num / den = estimated probability for the option j
+        # Where j is the chosen option in experiment i, and j
+        # is in nest l
 
 
 class MultiNomialLogitEstimator(ModelEstimator):
