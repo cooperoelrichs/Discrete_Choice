@@ -107,38 +107,58 @@ class NestedLogitEstimator(ModelEstimator):
     def prep_work(self):
         '''Nothing to see here'''
 
-    def cost_function(self, theta_f, X, y):
-        '''Costs calc'''
-        theta = np.reshape(theta_f[:self.k * self.nests], (self.k, self.n))
-        lda = np.reshape(theta_f[self.k * self.nests:], (self.nests, self.n))
-        self.theta = theta
+    def cost_function(self, theta, lambdas, X, y):
+        '''
+        Indicies
+        i - current choice alternative, subset of nest B_k
+        j - choice alternative, subset some nest B
+        n - current experiment, [1, ..., N]
+        k - current nest, contains choice alternative i, [1, ..., K]
+        l - number for nest alternative B_l, [1, ..., K]
+        M - total number of choice alternatives
 
-        # Two level NL
-        nest_sums = calc_nest_sums(theta, X, y)
-        log_sums = np.zeros(self.m)
-        for i in range(0, self.m):
-            log_sums[i] = self.probability(theta, X[i], y[i], lda, nest_sums)
+        Storage containers
+        V - 2D matrix of utilities, experiments * alternatives
+        theta - vector of utility parameters, alternatives
+        lambdas - vector of nest paramaters, nests
+        nest_lens - vector of nest lengths, nests
+        nest_sums - 2D matrix of e^(V/lamda), experiments * nests
+        alts - vector of vectors, maps nest and nested alternative to
+               overall alternative
+        '''
 
-        self.cost = np.sum(log_sums) / self.m
+        alts = '???'  # Still need to make this a thing!
+        V = np.zeros(self.N, self.M)
+        for n in range(0, self.N):
+            for l in range(0, self.K):
+                for j in range(0, self.nest_lens[l]):
+                    V[n, alts[l, j]] = np.dot(X[n], theta[l, j])
+
+        nest_sums = np.zeros(self.N, self.K)
+        for n in range(0, self.N):
+            for l in range(0, self.K):
+                for j in range(0, self.nest_lens[l]):
+                    nest_sums[n, l] += np.exp(V[n, alts[l, j]] / lambdas[l])
+
+        P = np.zeros(self.N, self.M)
+        for n in range(0, self.N):
+            for k in range(0, self.K):
+                for j in range(0, self.nest_lens[k]):
+                    num = (np.exp(V[n, alts[k, j]]) *
+                           (nest_sums[n, k] ** (lambdas[k] - 1)))
+                    dom = 0
+                    for l in range(0, self.K):
+                        dom += nest_sums[n, l] ** lambdas[l]
+                    P[n, alts[l, j]] = num / dom
+
+        self.cost = np.sum(np.ln(P)) / self.M
         return self.cost
 
     def grat_function(self, theta_f, X, y):
         '''Gradient calc'''
 
     def probability(self, theta, X_i, y_i, lda, nest_sums):
-        # lda is the list of the indipendence paramaters
-        j = y_i  # Get the index of the chosen, assumed y is [k_1, ..., k_K]
-        l = self.nests[j]
-        V = np.dot(X_i, theta[j])
-        num = np.exp(V / lda[l]) * nest_sums[l] ** (lda[l] - 1)
-        # nest_sum is an array of the sum of each exp(V/lambda)
-        # for all options in a nest
-        den = np.sum(nest_sums[l_2] ** lda[l_2])
-
-        return num / den
-        # P = num / den = estimated probability for the option j
-        # Where j is the chosen option in experiment i, and j
-        # is in nest l
+        '''This method might be useful'''
 
 
 class MultiNomialLogitEstimator(ModelEstimator):
