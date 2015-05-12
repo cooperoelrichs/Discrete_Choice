@@ -134,7 +134,7 @@ class NestedLogitEstimator(ModelEstimator):
 
         # Calculated fields
         theta = np.reshape(theta_f, (self.k, self.n))
-        self.nest_lens = [sum(self.alts[x]) for x in range(len(self.alts))]
+        self.nest_lens = np.sum(self.alts, axis=1)
         self.nest_sums = np.zeros(self.m, self.h)
         self.V = np.zeros(self.m, self.k)
 
