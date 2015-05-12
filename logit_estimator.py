@@ -107,58 +107,60 @@ class NestedLogitEstimator(ModelEstimator):
     def prep_work(self):
         '''Nothing to see here'''
 
-    def cost_function(self, theta, lambdas, X, y):
+    def cost_function(self, theta_f, lambdas, X, y):
         '''
         Indicies
-        i - current choice alternative, subset of nest B_k
-        j - choice alternative, subset some nest B
-        n - current experiment, [1, ..., N]
-        k - current nest, contains choice alternative i, [1, ..., K]
-        l - number for nest alternative B_l, [1, ..., K]
-        M - total number of choice alternatives
+        m - number of experiments
+        n - number of features
+        k - number of classes
+        h - number of nests
+        j - class, subset some nest l, [1, ..., k]
+        i - current experiment, [1, ..., m]
+        l - nest, [1, ..., h]
 
         Storage containers
-        V - 2D matrix of utilities, experiments * alternatives
-        theta - vector of utility parameters, alternatives
-        lambdas - vector of nest paramaters, nests
-        nest_lens - vector of nest lengths, nests
-        nest_sums - 2D matrix of e^(V/lamda), experiments * nests
+        V - 2D matrix of utilities, m * k
+        theta - vector of utility parameters, m
+        lambdas - vector of nest paramaters, h
+        nest_lens - vector of nest lengths, h
+        nest_sums - 2D matrix of e^(V/lamda), m * h
         alts - vector of vectors, maps nest and nested alternative to
-               overall alternative
+               overall alternative, h * (classes in nest)
         '''
 
-        alts = '???'  # Still need to make this a thing!
-        V = np.zeros(self.N, self.M)
-        for n in range(0, self.N):
-            for l in range(0, self.K):
-                for j in range(0, self.nest_lens[l]):
-                    V[n, alts[l, j]] = np.dot(X[n], theta[l, j])
+        # User inputs
+        self.lambdas = [0.5, 0.5]
+        self.alts = [[1, 2], [3, 4]]  # Still need to make this a thing!
 
-        nest_sums = np.zeros(self.N, self.K)
-        for n in range(0, self.N):
-            for l in range(0, self.K):
-                for j in range(0, self.nest_lens[l]):
-                    nest_sums[n, l] += np.exp(V[n, alts[l, j]] / lambdas[l])
+        # Calculated fields
+        theta = np.reshape(theta_f, (self.k, self.n))
+        self.nest_lens = [sum(self.alts[x]) for x in range(len(self.alts))]
+        self.nest_sums = np.zeros(self.m, self.h)
+        self.V = np.zeros(self.m, self.k)
 
-        P = np.zeros(self.N, self.M)
-        for n in range(0, self.N):
-            for k in range(0, self.K):
-                for j in range(0, self.nest_lens[k]):
-                    num = (np.exp(V[n, alts[k, j]]) *
-                           (nest_sums[n, k] ** (lambdas[k] - 1)))
+        for i in range(0, self.m):
+            for l in range(0, self.h):
+                for j in range(0, self.nest_lens[l]):
+                    V_ilj = np.dot(X[i], theta[self.alts[l, j]])
+                    self.V[i, self.alts[l, j]] = V_ilj
+                    self.nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
+
+        P = np.zeros(self.m, self.k)
+        for i in range(0, self.m):
+            for l in range(0, self.h):
+                for j in range(0, self.nest_lens[l]):
+                    num = (np.exp(self.V[i, self.alts[l, j]]) *
+                           (self.nest_sums[i, l] ** (self.lambdas[l] - 1)))
                     dom = 0
-                    for l in range(0, self.K):
-                        dom += nest_sums[n, l] ** lambdas[l]
-                    P[n, alts[l, j]] = num / dom
+                    for l_2 in range(0, self.h):
+                        dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
+                    P[i, self.alts[l_2, j]] = num / dom
 
-        self.cost = np.sum(np.ln(P)) / self.M
+        self.cost = np.sum(np.ln(P)) / self.m
         return self.cost
 
     def grat_function(self, theta_f, X, y):
         '''Gradient calc'''
-
-    def probability(self, theta, X_i, y_i, lda, nest_sums):
-        '''This method might be useful'''
 
 
 class MultiNomialLogitEstimator(ModelEstimator):
