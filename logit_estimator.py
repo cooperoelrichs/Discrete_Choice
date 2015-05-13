@@ -47,15 +47,16 @@ class LogitEstimator:
         # lr.gradient_function(lr.theta, lr.X, lr.y)
         return lr
 
-# TODO:
-# 2. Multi-class!!!
-#    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
-# 3. Constants on my MNL are weird and really small
+    def estimate_nested_model(X, y, C):
+        lr = NestedLogitEstimator(X, y, C, model='NL', alts=[[1, 2], [3, 4]])
+        lr.cost_function(lr.theta_f, lr.X, lr.y)
+        # lr.gradient_function(lr.theta, lr.X, lr.y)
+        return lr
 
 
 class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
-    def __init__(self, X, y, C):
+    def __init__(self, X, y, C, model, alts):
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
@@ -68,6 +69,16 @@ class ModelEstimator(object):
         self.C = C
         self.cost = None
         self.iteration = 0
+
+        # Nested Logit setup
+        if model == 'NL':
+            self.alts = np.array(alts)
+            self.h = len(self.alts)
+            self.lambdas = np.random.randn(self.h)
+            self.nest_lens = [len(x) for x in self.alts]
+            self.nest_sums = np.zeros(self.h)
+            self.V = np.zeros((self.m, self.k))
+            self.theta_f = np.append(self.theta_f, self.lambdas)
 
     def estimate(self):
         self.prep_work()
@@ -107,7 +118,7 @@ class NestedLogitEstimator(ModelEstimator):
     def prep_work(self):
         '''Nothing to see here'''
 
-    def cost_function(self, theta_f, lambdas, X, y):
+    def cost_function(self, theta_f, X, y):
         '''
         Indicies
         m - number of experiments
@@ -128,20 +139,17 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         '''
 
-        # User inputs
-        self.lambdas = [0.5, 0.5]
-        self.alts = [[1, 2], [3, 4]]  # Still need to make this a thing!
-
         # Calculated fields
-        theta = np.reshape(theta_f, (self.k, self.n))
+        self.lambdas = theta_f[-1 * self.h:]
+        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
         self.nest_lens = np.sum(self.alts, axis=1)
-        self.nest_sums = np.zeros(self.m, self.h)
-        self.V = np.zeros(self.m, self.k)
+        self.nest_sums = np.zeros((self.m, self.h))
+        self.V = np.zeros((self.m, self.k))
 
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
-                    V_ilj = np.dot(X[i], theta[self.alts[l, j]])
+                    V_ilj = np.dot(X[i], self.theta[self.alts[l, j]])
                     self.V[i, self.alts[l, j]] = V_ilj
                     self.nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
