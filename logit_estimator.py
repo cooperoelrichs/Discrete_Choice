@@ -48,7 +48,7 @@ class LogitEstimator:
         return lr
 
     def estimate_nested_model(X, y, C):
-        lr = NestedLogitEstimator(X, y, C, model='NL', alts=[[1, 2], [3, 4]])
+        lr = NestedLogitEstimator(X, y, C, model='NL', alts=[[0, 1], [2, 3]])
         lr.cost_function(lr.theta_f, lr.X, lr.y)
         # lr.gradient_function(lr.theta, lr.X, lr.y)
         return lr
@@ -74,9 +74,9 @@ class ModelEstimator(object):
         if model == 'NL':
             self.alts = np.array(alts)
             self.h = len(self.alts)
-            self.lambdas = np.random.randn(self.h)
+            self.lambdas = np.array([0.5, 0.5])  # np.random.randn(self.h)
             self.nest_lens = [len(x) for x in self.alts]
-            self.nest_sums = np.zeros(self.h)
+            self.nest_sums = np.zeros((self.m, self.h))
             self.V = np.zeros((self.m, self.k))
             self.theta_f = np.append(self.theta_f, self.lambdas)
 
@@ -139,12 +139,8 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         '''
 
-        # Calculated fields
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
-        self.nest_lens = np.sum(self.alts, axis=1)
-        self.nest_sums = np.zeros((self.m, self.h))
-        self.V = np.zeros((self.m, self.k))
 
         for i in range(0, self.m):
             for l in range(0, self.h):
@@ -153,18 +149,28 @@ class NestedLogitEstimator(ModelEstimator):
                     self.V[i, self.alts[l, j]] = V_ilj
                     self.nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
-        P = np.zeros(self.m, self.k)
+        P = np.zeros((self.m, self.k))
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
                     num = (np.exp(self.V[i, self.alts[l, j]]) *
                            (self.nest_sums[i, l] ** (self.lambdas[l] - 1)))
+
                     dom = 0
                     for l_2 in range(0, self.h):
                         dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
-                    P[i, self.alts[l_2, j]] = num / dom
+                    P[i, self.alts[l, j]] = num / dom
 
-        self.cost = np.sum(np.ln(P)) / self.m
+                    # Debug code!
+                    if num > -0.001 and num < 0.001:
+                        print('===================')
+                        print(num)
+                        print(self.V[i, self.alts[l, j]])
+                        print(self.nest_sums[i, l])
+                        print(self.lambdas[l])
+                        print(P[i, self.alts[l]])
+
+        self.cost = np.sum(np.log(P)) / self.m
         return self.cost
 
     def grat_function(self, theta_f, X, y):
