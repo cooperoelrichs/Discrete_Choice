@@ -48,15 +48,19 @@ class LogitEstimator:
         return lr
 
     def estimate_nested_model(X, y, C):
-        lr = NestedLogitEstimator(X, y, C, model='NL', alts=[[0, 1], [2, 3]])
-        lr.cost_function(lr.theta_f, lr.X, lr.y)
-        # lr.gradient_function(lr.theta, lr.X, lr.y)
-        return lr
+        lr_nl = NestedLogitEstimator(X, y, C, model='NL', alts=[[0, 1], [2, 3]])
+        lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+        lr_mnl = MultiNomialLogitEstimator(X, y, 9999999999)
+        lr_mnl.cost_function(lr_nl.theta, lr_nl.X, lr_nl.y)
+
+        print('MNL results')
+        print(' - cost: %.6f' % lr_mnl.cost)
+        return lr_nl
 
 
 class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
-    def __init__(self, X, y, C, model, alts):
+    def __init__(self, X, y, C, model=None, alts=None):
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
@@ -74,7 +78,7 @@ class ModelEstimator(object):
         if model == 'NL':
             self.alts = np.array(alts)
             self.h = len(self.alts)
-            self.lambdas = np.array([0.5, 0.5])  # np.random.randn(self.h)
+            self.lambdas = np.array([1, 1])  # np.random.randn(self.h)
             self.nest_lens = [len(x) for x in self.alts]
             self.nest_sums = np.zeros((self.m, self.h))
             self.V = np.zeros((self.m, self.k))
@@ -149,8 +153,11 @@ class NestedLogitEstimator(ModelEstimator):
                     self.V[i, self.alts[l, j]] = V_ilj
                     self.nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
-        P = np.zeros((self.m, self.k))
+        # P = np.zeros((self.m, self.k))
+        cost = 0
         for i in range(0, self.m):
+            # Alter this loop so that these calculations only
+            # occur where y = 1 (not where y = 0).
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
                     num = (np.exp(self.V[i, self.alts[l, j]]) *
@@ -159,19 +166,12 @@ class NestedLogitEstimator(ModelEstimator):
                     dom = 0
                     for l_2 in range(0, self.h):
                         dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
-                    P[i, self.alts[l, j]] = num / dom
+                    # P[i, self.alts[l, j]] = num / dom
+                    cost += y[i, self.alts[l, j]] * np.log(num / dom)
 
-                    # Debug code!
-                    if num > -0.001 and num < 0.001:
-                        print('===================')
-                        print(num)
-                        print(self.V[i, self.alts[l, j]])
-                        print(self.nest_sums[i, l])
-                        print(self.lambdas[l])
-                        print(P[i, self.alts[l]])
-
-        self.cost = np.sum(np.log(P)) / self.m
-        return self.cost
+        cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
+        self.cost = cost
+        return cost
 
     def grat_function(self, theta_f, X, y):
         '''Gradient calc'''
