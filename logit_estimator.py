@@ -158,6 +158,12 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             # Alter this loop so that these calculations only
             # occur where y = 1 (not where y = 0).
+            print(self.y[i, :])
+            print(np.array(range(0, self.k)))
+            j = max(np.dot(self.y[i, :].T, np.array(range(0, self.k))))
+            print(j)
+
+            # legacy code
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
                     num = (np.exp(self.V[i, self.alts[l, j]]) *
