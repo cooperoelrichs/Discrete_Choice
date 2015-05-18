@@ -17,7 +17,7 @@ scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
 
 start = time.clock()
-my_mnl = LogitEstimator.estimate_nested_model(X_scaled, y, C)
-my_mnl_time = time.clock() - start
+my_nl = LogitEstimator.estimate_nested_model(X_scaled, y, C)
+my_nl_time = time.clock() - start
 
-print_run_results('my MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
+print_run_results('NL', my_nl.theta, my_nl.cost, my_nl_time)
