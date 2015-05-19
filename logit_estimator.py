@@ -49,7 +49,7 @@ class LogitEstimator:
 
     def estimate_nested_model(X, y, C):
         lr_nl = NestedLogitEstimator(X, y, C, model='NL', alts=[[0, 1], [2, 3]])
-        lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+        lr_nl.estimate()
         lr_mnl = MultiNomialLogitEstimator(X, y, 9999999999)
         lr_mnl.cost_function(lr_nl.theta, lr_nl.X, lr_nl.y)
 
@@ -64,6 +64,7 @@ class ModelEstimator(object):
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
+        self.y_index = y
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
@@ -73,10 +74,14 @@ class ModelEstimator(object):
         self.C = C
         self.cost = None
         self.iteration = 0
+        machine_epsilon = np.finfo(np.float64).eps
+        self.sqrt_eps = np.sqrt(machine_epsilon)
 
         # Nested Logit setup
+        # Move this to the prep work method!
         if model == 'NL':
             self.alts = np.array(alts)
+            self.nest_index = [0, 0, 1, 1]
             self.h = len(self.alts)
             self.lambdas = np.array([1, 1])  # np.random.randn(self.h)
             self.nest_lens = [len(x) for x in self.alts]
@@ -158,29 +163,35 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             # Alter this loop so that these calculations only
             # occur where y = 1 (not where y = 0).
-            print(self.y[i, :])
-            print(np.array(range(0, self.k)))
-            j = max(np.dot(self.y[i, :].T, np.array(range(0, self.k))))
-            print(j)
+            j = self.y_index[i]
 
             # legacy code
-            for l in range(0, self.h):
-                for j in range(0, self.nest_lens[l]):
-                    num = (np.exp(self.V[i, self.alts[l, j]]) *
-                           (self.nest_sums[i, l] ** (self.lambdas[l] - 1)))
+            num = (np.exp(self.V[i, j]) *
+                   (self.nest_sums[i, l] ** (self.lambdas[l] - 1)))
 
-                    dom = 0
-                    for l_2 in range(0, self.h):
-                        dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
-                    # P[i, self.alts[l, j]] = num / dom
-                    cost += y[i, self.alts[l, j]] * np.log(num / dom)
+            dom = 0
+            for l_2 in range(0, self.h):
+                dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
+            # P[i, self.alts[l, j]] = num / dom
+            cost += np.log(num / dom)
 
         cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
         self.cost = cost
         return cost
 
-    def grat_function(self, theta_f, X, y):
-        '''Gradient calc'''
+    def grad_function(self, theta_f, X, y):
+        '''Serious numerical gradient stuff'''
+        self.lambdas = theta_f[-1 * self.h:]
+        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+
+        step_size = self.sqrt_eps * abs(theta_f)  # max(abs(X, 1))
+        theta_f_step = theta_f + step_size
+        d_theta_f = theta_f_step - theta_f
+        gradient = ((self.cost_function(theta_f_step, self.X, self.y) -
+                     self.cost_function(theta_f, self.X, self.y)) / d_theta_f)
+                   # ^ This is wrong, it assumes that grad in only one dimension
+        self.grad = -1 * gradient / self.m
+        return self.grad
 
 
 class MultiNomialLogitEstimator(ModelEstimator):
