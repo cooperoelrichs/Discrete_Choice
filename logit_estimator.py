@@ -68,8 +68,8 @@ class ModelEstimator(object):
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        self.theta = np.random.randn(self.k, self.n)
-        # self.theta = np.zeros((self.k, self.n))
+        # self.theta = np.random.randn(self.k, self.n)
+        self.theta = np.zeros((self.k, self.n))
         self.theta_f = np.ravel(self.theta)
         self.C = C
         self.cost = None
@@ -83,7 +83,7 @@ class ModelEstimator(object):
             self.alts = np.array(alts)
             self.nest_index = [0, 0, 1, 1]
             self.h = len(self.alts)
-            self.lambdas = np.array([1, 1])  # np.random.randn(self.h)
+            self.lambdas = np.array([0.5, 0.5])  # np.random.randn(self.h)
             self.nest_lens = [len(x) for x in self.alts]
             self.nest_sums = np.zeros((self.m, self.h))
             self.V = np.zeros((self.m, self.k))
@@ -179,7 +179,19 @@ class NestedLogitEstimator(ModelEstimator):
         self.cost = cost
         return cost
 
-    def grad_function(self, theta_f, X, y):
+    def gradient_function(self, theta_f, X, y):
+        self.lambdas = theta_f[-1 * self.h:]
+        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+
+        step = np.ones_like(theta_f) * 1.0
+        gradient = (self.cost_function(step + theta_f, self.X, self.y) -
+                    self.cost_function(theta_f, self.X, self.y)) / step
+
+        # gradient = np.gradient(f, varags)
+        self.grad = -1 * gradient / self.m
+        return self.grad
+
+    def gradient_function_(self, theta_f, X, y):
         '''Serious numerical gradient stuff'''
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
@@ -189,8 +201,17 @@ class NestedLogitEstimator(ModelEstimator):
         d_theta_f = theta_f_step - theta_f
         gradient = ((self.cost_function(theta_f_step, self.X, self.y) -
                      self.cost_function(theta_f, self.X, self.y)) / d_theta_f)
-                   # ^ This is wrong, it assumes that grad in only one dimension
         self.grad = -1 * gradient / self.m
+
+        print(step_size[1])
+        print(d_theta_f[1])
+        print(theta_f[1])
+        print(theta_f_step[1])
+        print(self.cost_function(theta_f, self.X, self.y))
+        print(self.cost_function(theta_f_step, self.X, self.y))
+        print(gradient[1])
+        print('-----------------------------')
+        # exit()
         return self.grad
 
 
