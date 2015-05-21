@@ -148,7 +148,7 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         '''
 
-        self.lambdas = theta_f[-1 * self.h:]
+        self.lambdas = [1.0, 1.0]  # theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
 
         for i in range(0, self.m):
@@ -161,8 +161,6 @@ class NestedLogitEstimator(ModelEstimator):
         # P = np.zeros((self.m, self.k))
         cost = 0
         for i in range(0, self.m):
-            # Alter this loop so that these calculations only
-            # occur where y = 1 (not where y = 0).
             j = self.y_index[i]
 
             # legacy code
@@ -172,7 +170,6 @@ class NestedLogitEstimator(ModelEstimator):
             dom = 0
             for l_2 in range(0, self.h):
                 dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
-            # P[i, self.alts[l, j]] = num / dom
             cost += np.log(num / dom)
 
         cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
@@ -180,38 +177,29 @@ class NestedLogitEstimator(ModelEstimator):
         return cost
 
     def gradient_function(self, theta_f, X, y):
-        self.lambdas = theta_f[-1 * self.h:]
-        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
-
-        step = np.ones_like(theta_f) * 1.0
-        gradient = (self.cost_function(step + theta_f, self.X, self.y) -
-                    self.cost_function(theta_f, self.X, self.y)) / step
-
-        # gradient = np.gradient(f, varags)
-        self.grad = -1 * gradient / self.m
-        return self.grad
-
-    def gradient_function_(self, theta_f, X, y):
         '''Serious numerical gradient stuff'''
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
 
-        step_size = self.sqrt_eps * abs(theta_f)  # max(abs(X, 1))
-        theta_f_step = theta_f + step_size
-        d_theta_f = theta_f_step - theta_f
-        gradient = ((self.cost_function(theta_f_step, self.X, self.y) -
-                     self.cost_function(theta_f, self.X, self.y)) / d_theta_f)
-        self.grad = -1 * gradient / self.m
+        gradient = np.zeros_like(theta_f)
+        for p in range(0, len(theta_f)):
+            theta_p = theta_f[p]
+            step_size = self.sqrt_eps * 2.0
+            theta_p_step = theta_p + step_size
+            d_theta_p = theta_p_step - theta_p
+            theta_f_step = np.copy(theta_f)
+            theta_f_step[p] = theta_p_step
+            gradient[p] = ((self.cost_function(theta_f_step, self.X, self.y) -
+                            self.cost_function(theta_f, self.X, self.y)) /
+                           d_theta_p)
 
-        print(step_size[1])
-        print(d_theta_f[1])
-        print(theta_f[1])
-        print(theta_f_step[1])
-        print(self.cost_function(theta_f, self.X, self.y))
-        print(self.cost_function(theta_f_step, self.X, self.y))
-        print(gradient[1])
-        print('-----------------------------')
-        # exit()
+        # step_size = self.sqrt_eps  # * abs(theta_f)  # max(abs(X, 1))
+        # theta_f_step = theta_f + step_size
+        # d_theta_f = theta_f_step - theta_f
+        # gradient = ((self.cost_function(theta_f_step, self.X, self.y) -
+        #              self.cost_function(theta_f, self.X, self.y)) / d_theta_f)
+
+        self.grad = gradient
         return self.grad
 
 
