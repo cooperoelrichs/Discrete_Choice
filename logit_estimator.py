@@ -48,19 +48,21 @@ class LogitEstimator:
         return lr
 
     def estimate_nested_model(X, y, C):
-        lr_nl = NestedLogitEstimator(X, y, C, model='NL', alts=[[0, 1], [2, 3]])
-        lr_nl.estimate()
-        lr_mnl = MultiNomialLogitEstimator(X, y, 9999999999)
+        lr_nl = NestedLogitEstimator(X, y, C, alts=[[0, 1], [2, 3]])
+        lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+        lr_mnl = MultiNomialLogitEstimator(X, y, 999999999)
         lr_mnl.cost_function(lr_nl.theta, lr_nl.X, lr_nl.y)
 
-        print('MNL results')
-        print(' - cost: %.6f' % lr_mnl.cost)
+        print('MNL results - cost: %.6f' % lr_mnl.cost)
+        print('NL results  - cost: %.6f' % lr_nl.cost)
+
+        lr_nl.estimate()
         return lr_nl
 
 
 class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
-    def __init__(self, X, y, C, model=None, alts=None):
+    def __init__(self, X, y, C, alts=None):
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
@@ -69,28 +71,17 @@ class ModelEstimator(object):
         self.m = X.shape[0]
         self.k = self.y.shape[1]
         # self.theta = np.random.randn(self.k, self.n)
-        self.theta = np.zeros((self.k, self.n))
+        self.theta = np.ones((self.k, self.n))
         self.theta_f = np.ravel(self.theta)
         self.C = C
         self.cost = None
         self.iteration = 0
         machine_epsilon = np.finfo(np.float64).eps
         self.sqrt_eps = np.sqrt(machine_epsilon)
-
-        # Nested Logit setup
-        # Move this to the prep work method!
-        if model == 'NL':
-            self.alts = np.array(alts)
-            self.nest_index = [0, 0, 1, 1]
-            self.h = len(self.alts)
-            self.lambdas = np.array([0.5, 0.5])  # np.random.randn(self.h)
-            self.nest_lens = [len(x) for x in self.alts]
-            self.nest_sums = np.zeros((self.m, self.h))
-            self.V = np.zeros((self.m, self.k))
-            self.theta_f = np.append(self.theta_f, self.lambdas)
+        self.alts = alts
+        self.prep_work()
 
     def estimate(self):
-        self.prep_work()
         self.gradient_check(self.cost_function,
                             self.gradient_function,
                             self.theta_f, self.X, self.y)
@@ -125,7 +116,13 @@ class NestedLogitEstimator(ModelEstimator):
         2. Estimate the gradient for this function numerically!
     '''
     def prep_work(self):
-        '''Nothing to see here'''
+        self.alts = np.array(self.alts)
+        self.nest_index = [0, 0, 1, 1]
+        self.h = len(self.alts)
+        self.lambdas = np.array([1.1, 1.1])  # np.random.randn(self.h)
+        self.nest_lens = [len(x) for x in self.alts]
+        self.V = np.zeros((self.m, self.k))
+        self.theta_f = np.append(self.theta_f, self.lambdas)
 
     def cost_function(self, theta_f, X, y):
         '''
@@ -148,50 +145,58 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         '''
 
-        self.lambdas = [1.0, 1.0]  # theta_f[-1 * self.h:]
+        self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
 
+        # print(self.lambdas)
+        # print(self.theta)
+
+        nest_sums = np.zeros((self.m, self.h))
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
                     V_ilj = np.dot(X[i], self.theta[self.alts[l, j]])
                     self.V[i, self.alts[l, j]] = V_ilj
-                    self.nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
+                    nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
         # P = np.zeros((self.m, self.k))
-        cost = 0
+        cost = 0.0
         for i in range(0, self.m):
             j = self.y_index[i]
 
             # legacy code
             num = (np.exp(self.V[i, j]) *
-                   (self.nest_sums[i, l] ** (self.lambdas[l] - 1)))
+                   (nest_sums[i, l] ** (self.lambdas[l] - 1)))
 
             dom = 0
             for l_2 in range(0, self.h):
-                dom += self.nest_sums[i, l_2] ** self.lambdas[l_2]
+                dom += nest_sums[i, l_2] ** self.lambdas[l_2]
             cost += np.log(num / dom)
 
-        cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
-        self.cost = cost
-        return cost
+        self.cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
+        return self.cost
 
     def gradient_function(self, theta_f, X, y):
         '''Serious numerical gradient stuff'''
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
 
+        base_cost = self.cost_function(theta_f, self.X, self.y)
+
         gradient = np.zeros_like(theta_f)
         for p in range(0, len(theta_f)):
             theta_p = theta_f[p]
-            step_size = self.sqrt_eps * 2.0
+            step_size = self.sqrt_eps * 10.0
             theta_p_step = theta_p + step_size
-            d_theta_p = theta_p_step - theta_p
+            d_theta_p = step_size  # theta_p_step - theta_p
             theta_f_step = np.copy(theta_f)
             theta_f_step[p] = theta_p_step
-            gradient[p] = ((self.cost_function(theta_f_step, self.X, self.y) -
-                            self.cost_function(theta_f, self.X, self.y)) /
-                           d_theta_p)
+            step_cost = self.cost_function(theta_f_step, self.X, self.y)
+            gradient[p] = ((step_cost - base_cost) / d_theta_p)
+            print((str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
+                   str(base_cost) + ' - ' +
+                   str(step_cost) + ' - ' +
+                   str(gradient[p])))
 
         # step_size = self.sqrt_eps  # * abs(theta_f)  # max(abs(X, 1))
         # theta_f_step = theta_f + step_size
