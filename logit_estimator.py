@@ -57,6 +57,7 @@ class LogitEstimator:
         print('NL results  - cost: %.6f' % lr_nl.cost)
 
         lr_nl.estimate()
+        print('MNL results - cost: %.6f' % lr_mnl.cost)
         return lr_nl
 
 
@@ -192,7 +193,8 @@ class NestedLogitEstimator(ModelEstimator):
             theta_f_step = np.copy(theta_f)
             theta_f_step[p] = theta_p_step
             step_cost = self.cost_function(theta_f_step, self.X, self.y)
-            gradient[p] = ((step_cost - base_cost) / d_theta_p)
+            gradient[p] = -1 * ((step_cost - base_cost) / d_theta_p)
+            # Should this have the * -1 ???
             print((str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
                    str(base_cost) + ' - ' +
                    str(step_cost) + ' - ' +
