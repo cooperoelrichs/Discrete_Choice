@@ -64,6 +64,7 @@ class LogitEstimator:
 class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
     def __init__(self, X, y, C, alts=None):
+        np.seterr(all='raise')
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
@@ -71,8 +72,8 @@ class ModelEstimator(object):
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        # self.theta = np.random.randn(self.k, self.n)
-        self.theta = np.ones((self.k, self.n))
+        self.theta = np.random.randn(self.k, self.n)
+        # self.theta = np.ones((self.k, self.n))
         self.theta_f = np.ravel(self.theta)
         self.C = C
         self.cost = None
@@ -98,8 +99,9 @@ class ModelEstimator(object):
                                          gradient_function,
                                          theta, X, y)
 
-        if grad_check > 1 * 10**-6:
-            print('Gradient failed check with an error of ' + str(grad_check))
+        if abs(grad_check) > 6 * 10**-6:
+            error = 'Gradient failed check with an error of ' + str(grad_check)
+            raise ValueError(error)
 
 
 class NestedLogitEstimator(ModelEstimator):
@@ -120,7 +122,7 @@ class NestedLogitEstimator(ModelEstimator):
         self.alts = np.array(self.alts)
         self.nest_index = [0, 0, 1, 1]
         self.h = len(self.alts)
-        self.lambdas = np.array([1.1, 1.1])  # np.random.randn(self.h)
+        self.lambdas = np.array([1.1, 0.9])  # np.random.randn(self.h)
         self.nest_lens = [len(x) for x in self.alts]
         self.V = np.zeros((self.m, self.k))
         self.theta_f = np.append(self.theta_f, self.lambdas)
@@ -160,21 +162,18 @@ class NestedLogitEstimator(ModelEstimator):
                     self.V[i, self.alts[l, j]] = V_ilj
                     nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
-        # P = np.zeros((self.m, self.k))
-        cost = 0.0
+        P = np.zeros((self.m))
+        # cost = 0.0
         for i in range(0, self.m):
             j = self.y_index[i]
-
-            # legacy code
             num = (np.exp(self.V[i, j]) *
                    (nest_sums[i, l] ** (self.lambdas[l] - 1)))
-
             dom = 0
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
-            cost += np.log(num / dom)
+            P[i] = num / dom
 
-        self.cost = -1 * cost / self.m  # np.sum(np.log(P)) / self.m
+        self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
 
     def gradient_function(self, theta_f, X, y):
@@ -193,12 +192,13 @@ class NestedLogitEstimator(ModelEstimator):
             theta_f_step = np.copy(theta_f)
             theta_f_step[p] = theta_p_step
             step_cost = self.cost_function(theta_f_step, self.X, self.y)
-            gradient[p] = -1 * ((step_cost - base_cost) / d_theta_p)
-            # Should this have the * -1 ???
-            print((str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
-                   str(base_cost) + ' - ' +
-                   str(step_cost) + ' - ' +
-                   str(gradient[p])))
+            gradient[p] = ((step_cost - base_cost) / d_theta_p)
+
+            if p == 0:
+                print((str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
+                       str(base_cost) + ' - ' +
+                       str(step_cost) + ' - ' +
+                       str(gradient[p])))
 
         # step_size = self.sqrt_eps  # * abs(theta_f)  # max(abs(X, 1))
         # theta_f_step = theta_f + step_size
