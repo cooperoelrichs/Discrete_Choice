@@ -47,7 +47,7 @@ class LogitEstimator:
         # lr.gradient_function(lr.theta, lr.X, lr.y)
         return lr
 
-    def estimate_nested_model(X, y, C):
+    def _estimate_nested_model(X, y, C):
         lr_nl = NestedLogitEstimator(X, y, C, alts=[[0, 1], [2, 3]])
         lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
         lr_mnl = MultiNomialLogitEstimator(X, y, 999999999)
@@ -56,9 +56,23 @@ class LogitEstimator:
         print('MNL results - cost: %.6f' % lr_mnl.cost)
         print('NL results  - cost: %.6f' % lr_nl.cost)
 
-        lr_nl.estimate()
-        print('MNL results - cost: %.6f' % lr_mnl.cost)
+        # lr_nl.estimate()
+        # print('MNL results - cost: %.6f' % lr_mnl.cost)
         return lr_nl
+
+    def estimate_nested_model(X, y, C):
+        X = np.array([[1, 2], [0, 0]])
+        theta = np.array([[2, 0, 2], [-1, 2, 1], [0, 1, 0], [0, 0, 0]])
+        lambdas = np.array([0.5, 1])
+        y = np.array([0, 1, 2, 3])
+
+        theta_f = np.ravel(theta)
+        theta_f = np.append(theta_f, lambdas)
+
+        lr_nl = NestedLogitEstimator(X, y, C, alts=[[0, 1], [2, 3]])
+        X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
+        lr_nl.cost_function(theta_f, X, y)
+        print('NL results  - cost: %.6f' % lr_nl.cost)
 
 
 class ModelEstimator(object):
@@ -122,9 +136,9 @@ class NestedLogitEstimator(ModelEstimator):
         self.alts = np.array(self.alts)
         self.nest_index = [0, 0, 1, 1]
         self.h = len(self.alts)
-        self.lambdas = np.array([1.1, 0.9])  # np.random.randn(self.h)
+        self.lambdas = np.array([1.0, 1.0])  # np.random.randn(self.h)
         self.nest_lens = [len(x) for x in self.alts]
-        self.V = np.zeros((self.m, self.k))
+        # self.V = np.zeros((self.m, self.k))
         self.theta_f = np.append(self.theta_f, self.lambdas)
 
     def cost_function(self, theta_f, X, y):
@@ -155,23 +169,28 @@ class NestedLogitEstimator(ModelEstimator):
         # print(self.theta)
 
         nest_sums = np.zeros((self.m, self.h))
+        V = np.zeros((self.m, self.k))
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
                     V_ilj = np.dot(X[i], self.theta[self.alts[l, j]])
-                    self.V[i, self.alts[l, j]] = V_ilj
+                    V[i, self.alts[l, j]] = V_ilj
                     nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
         P = np.zeros((self.m))
         # cost = 0.0
         for i in range(0, self.m):
             j = self.y_index[i]
-            num = (np.exp(self.V[i, j]) *
+            num = (np.exp(V[i, j]) *
                    (nest_sums[i, l] ** (self.lambdas[l] - 1)))
             dom = 0
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
             P[i] = num / dom
+
+        print(V)
+        print(nest_sums)  # Problem in the nest sums???
+        print(P)
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
