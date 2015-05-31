@@ -181,12 +181,22 @@ class NestedLogitEstimator(ModelEstimator):
         # cost = 0.0
         for i in range(0, self.m):
             j = self.y_index[i]
-            num = (np.exp(V[i, j]) *
+            l = self.nest_index[j]
+            num = (np.exp(V[i, j] / self.lambdas[l]) *
                    (nest_sums[i, l] ** (self.lambdas[l] - 1)))
             dom = 0
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
+                print([nest_sums[i, l_2], self.lambdas[l_2]])
             P[i] = num / dom
+
+            print([i, j, l])
+            print(V[i, j])
+            print(np.exp(V[i, j] / self.lambdas[l]))
+            print(nest_sums[i, l] ** (self.lambdas[l] - 1))
+            print(num)
+            print(dom)
+            print('-----------')
 
         print(V)
         print(nest_sums)  # Problem in the nest sums???
