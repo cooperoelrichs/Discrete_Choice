@@ -10,15 +10,15 @@ def print_run_results(model_name, coefs, cost, run_time):
     print(' - cost: %.6f' % cost)
     print(' - run time: %.6f' % run_time)
 
-X, y = datasets.make_classification(n_samples=500,
+X, y = datasets.make_classification(n_samples=5000,
                                     n_features=10,
                                     n_informative=8,
                                     n_redundant=0,
                                     n_repeated=0,
-                                    n_classes=4,
+                                    n_classes=6,
                                     n_clusters_per_class=2)
 C = 0.01
-alts = [[0, 1, 3], [2]]
+alts = [[0, 1, 5], [2], [3, 4]]
 
 scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
