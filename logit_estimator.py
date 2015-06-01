@@ -175,8 +175,8 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
-                    V_ilj = np.dot(X[i], self.theta[self.alts[l, j]])
-                    V[i, self.alts[l, j]] = V_ilj
+                    V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
+                    V[i, self.alts[l][j]] = V_ilj
                     nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
 
         P = np.zeros((self.m))
