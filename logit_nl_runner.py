@@ -18,7 +18,7 @@ X, y = datasets.make_classification(n_samples=500,
                                     n_classes=4,
                                     n_clusters_per_class=2)
 C = 0.01
-alts = [[0, 1], [2, 3]]
+alts = [[0, 1, 3], [2]]
 
 scaler = LogitEstimator.scaler(X)
 X_scaled = scaler.transform(X)
