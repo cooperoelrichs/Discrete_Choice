@@ -10,7 +10,7 @@ def print_run_results(model_name, coefs, cost, run_time):
     print(' - cost: %.6f' % cost)
     print(' - run time: %.6f' % run_time)
 
-X, y = datasets.make_classification(n_samples=5000,
+X, y = datasets.make_classification(n_samples=1000,
                                     n_features=10,
                                     n_informative=8,
                                     n_redundant=0,
