@@ -25,8 +25,6 @@ def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):
 file_name = 'swissmetro.dat'
 data = genfromtxt(file_name, delimiter='\t', skip_header=1)
 headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
-print(headers)
-# data = data[1:-1]
 data = data[data[:, -1] != 0]
 
 columns = [18, 19, 21, 22, 25, 26]
