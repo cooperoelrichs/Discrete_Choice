@@ -177,7 +177,15 @@ class NestedLogitEstimator(ModelEstimator):
                 for j in range(0, self.nest_lens[l]):
                     V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
                     V[i, self.alts[l][j]] = V_ilj
-                    nest_sums[i, l] += np.exp(V_ilj / self.lambdas[l])
+                    V_scaled = V_ilj / self.lambdas[l]
+                    if V_scaled > 100.0 or V_scaled < -100.0:
+                        # We are getting very small lambda values. Why?
+                        # Is is the common utility function across
+                        # alternatives and nests?
+                        print('%0.6f - %0.6f - %0.6f' %
+                              (V_ilj, self.lambdas[l], V_scaled))
+                    # np.exp(x), where x > 709, causes an overflow
+                    nest_sums[i, l] += np.exp(V_scaled)
 
         P = np.zeros((self.m))
         # cost = 0.0
@@ -191,18 +199,6 @@ class NestedLogitEstimator(ModelEstimator):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
                 # print([nest_sums[i, l_2], self.lambdas[l_2]])
             P[i] = num / dom
-
-            # print([i, j, l])
-            # print(V[i, j])
-            # print(np.exp(V[i, j] / self.lambdas[l]))
-            # print(nest_sums[i, l] ** (self.lambdas[l] - 1))
-            # print(num)
-            # print(dom)
-            # print('-----------')
-
-        # print(V)
-        # print(nest_sums)  # Problem in the nest sums???
-        # print(P[0])
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
@@ -218,9 +214,9 @@ class NestedLogitEstimator(ModelEstimator):
         gradient = np.zeros_like(theta_f)
         for p in range(0, len(theta_f)):
             theta_p = theta_f[p]
-            step_size = self.sqrt_eps * 2.0
+            step_size = self.sqrt_eps  # * 2.0
             theta_p_step = theta_p + step_size
-            d_theta_p = step_size  # theta_p_step - theta_p
+            d_theta_p = theta_p_step - theta_p  # This doesn't work...
             theta_f_step = np.copy(theta_f)
             theta_f_step[p] = theta_p_step
             step_cost = self.cost_function(theta_f_step, self.X, self.y)
@@ -241,6 +237,9 @@ class NestedLogitEstimator(ModelEstimator):
 
         self.grad = gradient
         return self.grad
+
+    def calc_d_theta(self, step, initial):
+        return step - initial
 
 
 class MultiNomialLogitEstimator(ModelEstimator):
