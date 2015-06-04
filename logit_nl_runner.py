@@ -3,10 +3,11 @@ from logit_estimator import LogitEstimator
 import time
 
 
-def print_run_results(model_name, coefs, cost, run_time):
+def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):
     print('%s results' % model_name)
     print(' - coefficients:')
     print(coefs)
+    print(' - lambdas: %s' % str(lambdas))
     print(' - cost: %.6f' % cost)
     print(' - run time: %.6f' % run_time)
 
@@ -32,4 +33,4 @@ my_mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
 my_mnl_time = time.clock() - start
 
 print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
-print_run_results('NL', my_nl.theta, my_nl.cost, my_nl_time)
+print_run_results('NL', my_nl.theta, my_nl.cost, my_nl_time, my_nl.lambdas)
