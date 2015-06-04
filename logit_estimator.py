@@ -75,7 +75,7 @@ class LogitEstimator:
 
 class ModelEstimator(object):
     '''A home made implimentation of logist.C regression'''
-    def __init__(self, X, y, C, alts=None):
+    def __init__(self, X, y, C, alts=None, fixed_params=set()):
         np.seterr(all='raise')
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # self.X[0, 0] = 0
@@ -93,6 +93,7 @@ class ModelEstimator(object):
         machine_epsilon = np.finfo(np.float64).eps
         self.sqrt_eps = np.sqrt(machine_epsilon)
         self.alts = alts
+        # self.fixed_params = fixed_params
         self.prep_work()
 
     def estimate(self):
@@ -101,8 +102,7 @@ class ModelEstimator(object):
                             self.theta_f, self.X, self.y)
 
         self.theta_f = optimize.fmin_bfgs(self.cost_function, self.theta_f,
-                                          fprime=self.gradient_function,
-                                          args=(self.X, self.y),
+                                          fprime=self.gradient_function, args=(self.X, self.y),
                                           gtol=0.001, disp=False)
 
     def gradient_check(self, cost_function, gradient_function,
@@ -145,6 +145,9 @@ class NestedLogitEstimator(ModelEstimator):
 
     def cost_function(self, theta_f, X, y):
         '''
+        Based on formula (4.2) from:
+        K. Train, http://eml.berkeley.edu/books/train1201.pdf
+
         Indicies
         m - number of experiments
         n - number of features
@@ -164,11 +167,20 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         '''
 
+        # TODO: Alternative specific utility functions
+        # TODO: Fixed parameters
+        #
+        # 1. Have a dict of parameters (starting with an inital value)
+        #    and have a set specifying parameters that are fixed
+        #       { 0 : 0.5, ... }
+        #       set([2, 5, ...]) # skip parameters that are in this set
+        # 2. Have a dict of utility functions, each of which takes the
+        #    parameter dict as an input
+        #       def u(X_i, parameters): np.dot(X_i, parameters[...])
+        #       { 0 : u(X_i, parameters), ... }
+
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
-
-        # print(self.lambdas)
-        # print(self.theta)
 
         nest_sums = np.zeros((self.m, self.h))
         V = np.zeros((self.m, self.k))
@@ -178,17 +190,14 @@ class NestedLogitEstimator(ModelEstimator):
                     V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
                     V[i, self.alts[l][j]] = V_ilj
                     V_scaled = V_ilj / self.lambdas[l]
-                    if V_scaled > 100.0 or V_scaled < -100.0:
-                        # We are getting very small lambda values. Why?
-                        # Is is the common utility function across
-                        # alternatives and nests?
-                        print('%0.6f - %0.6f - %0.6f' %
-                              (V_ilj, self.lambdas[l], V_scaled))
-                    # np.exp(x), where x > 709, causes an overflow
+                    if V_scaled > 200.0 or V_scaled < -200.0:
+                        # We are getting very small lambda values sometimes.
+                        # np.exp(x), where x > 709, causes an overflow
+                        print('%0.6f - %s - %0.6f' %
+                              (V_ilj, str(self.lambdas), V_scaled))
                     nest_sums[i, l] += np.exp(V_scaled)
 
         P = np.zeros((self.m))
-        # cost = 0.0
         for i in range(0, self.m):
             j = self.y_index[i]
             l = self.nest_index[j]
@@ -197,7 +206,6 @@ class NestedLogitEstimator(ModelEstimator):
             dom = 0
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
-                # print([nest_sums[i, l_2], self.lambdas[l_2]])
             P[i] = num / dom
 
         self.cost = - np.sum(np.log(P)) / self.m
