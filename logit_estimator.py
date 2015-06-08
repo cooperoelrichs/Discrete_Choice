@@ -130,6 +130,7 @@ class NestedLogitEstimator(ModelEstimator):
            K. Train, http://eml.berkeley.edu/books/train1201.pdf
         2. Estimate the gradient for this function numerically!
     '''
+
     def prep_work(self):
         self.alts = np.array(self.alts)
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
@@ -143,12 +144,27 @@ class NestedLogitEstimator(ModelEstimator):
             for j in x:
                 self.nest_index[j] = i
 
+        # Experimental utility function specification
+        self.fixed_parameters = set([0, 4])
+        self.parameters = {
+            0: np.random.rand(),
+            1: np.random.rand(),
+            2: np.random.rand(),
+            3: 1,
+            4: 1,
+        }
+
+        def u1(X_i, params): np.dot(X_i, params.get(1, 2,  3))
+        self.utility_functions = {
+            0: u1,
+        }
+
     def cost_function(self, theta_f, X, y):
         '''
         Based on formula (4.2) from:
         K. Train, http://eml.berkeley.edu/books/train1201.pdf
 
-        Indicies
+        Indices
         m - number of experiments
         n - number of features
         k - number of classes
@@ -160,9 +176,9 @@ class NestedLogitEstimator(ModelEstimator):
         Storage containers
         V - 2D matrix of utilities, m * k
         theta - vector of utility parameters, m
-        lambdas - vector of nest paramaters, h
+        lambdas - vector of nest parameters, h
         nest_lens - vector of nest lengths, h
-        nest_sums - 2D matrix of e^(V/lamda), m * h
+        nest_sums - 2D matrix of e^(V/lambda), m * h
         alts - vector of vectors, maps nest and nested alternative to
                overall alternative, h * (classes in nest)
         '''
@@ -170,7 +186,7 @@ class NestedLogitEstimator(ModelEstimator):
         # TODO: Alternative specific utility functions
         # TODO: Fixed parameters
         #
-        # 1. Have a dict of parameters (starting with an inital value)
+        # 1. Have a dict of parameters (starting with an initial value)
         #    and have a set specifying parameters that are fixed
         #       { 0 : 0.5, ... }
         #       set([2, 5, ...]) # skip parameters that are in this set
@@ -190,11 +206,11 @@ class NestedLogitEstimator(ModelEstimator):
                     V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
                     V[i, self.alts[l][j]] = V_ilj
                     V_scaled = V_ilj / self.lambdas[l]
-                    if V_scaled > 200.0 or V_scaled < -200.0:
-                        # We are getting very small lambda values sometimes.
-                        # np.exp(x), where x > 709, causes an overflow
-                        print('%0.6f - %s - %0.6f' %
-                              (V_ilj, str(self.lambdas), V_scaled))
+                    # if V_scaled > 200.0 or V_scaled < -200.0:
+                    #     # We are getting very small lambda values sometimes.
+                    #     # np.exp(x), where x > 709, causes an overflow
+                    #     print('%0.6f - %s - %0.6f' %
+                    #           (V_ilj, str(self.lambdas), V_scaled))
                     nest_sums[i, l] += np.exp(V_scaled)
 
         P = np.zeros((self.m))
@@ -236,12 +252,6 @@ class NestedLogitEstimator(ModelEstimator):
                        str(base_cost) + ' - ' +
                        str(step_cost) + ' - ' +
                        str(gradient[p])))
-
-        # step_size = self.sqrt_eps  # * abs(theta_f)  # max(abs(X, 1))
-        # theta_f_step = theta_f + step_size
-        # d_theta_f = theta_f_step - theta_f
-        # gradient = ((self.cost_function(theta_f_step, self.X, self.y) -
-        #              self.cost_function(theta_f, self.X, self.y)) / d_theta_f)
 
         self.grad = gradient
         return self.grad
