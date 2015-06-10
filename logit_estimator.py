@@ -11,12 +11,12 @@ import numpy as np
 
 
 class LogitEstimator:
-    '''This class just prepares and runs actual model estimation classes'''
+    """This class just prepares and runs actual model estimation classes"""
     def scaler(X):
         return preprocessing.StandardScaler().fit(X)
 
     def estimate_scikit_learn_model(X, y, C):
-        '''Estimate a scikit-learn multinomial logit model'''
+        """Estimate a scikit-learn multinomial logit model"""
         X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         # X[0, 0] = 0
 
@@ -74,7 +74,7 @@ class LogitEstimator:
 
 
 class ModelEstimator(object):
-    '''A home made implimentation of logist.C regression'''
+    """A home made implimentation of logist.C regression"""
     def __init__(self, X, y, C, alts=None, fixed_params=set()):
         np.seterr(all='raise')
         self.X = np.append(np.ones((X.shape[0], 1)), X, axis=1)
@@ -105,7 +105,8 @@ class ModelEstimator(object):
                                           fprime=self.gradient_function, args=(self.X, self.y),
                                           gtol=0.001, disp=False)
 
-    def gradient_check(self, cost_function, gradient_function,
+    @staticmethod
+    def gradient_check(cost_function, gradient_function,
                        theta, X, y):
         grad_check = optimize.check_grad(cost_function,
                                          gradient_function,
@@ -117,7 +118,7 @@ class ModelEstimator(object):
 
 
 class NestedLogitEstimator(ModelEstimator):
-    '''Nested Logit!
+    """Nested Logit!
 
     Good resources:
         1. http://www.civil.iitb.ac.in/~kvkrao/CE%20780%20
@@ -129,13 +130,13 @@ class NestedLogitEstimator(ModelEstimator):
         1. Start with only one nest level and use formula (4.2) from
            K. Train, http://eml.berkeley.edu/books/train1201.pdf
         2. Estimate the gradient for this function numerically!
-    '''
+    """
 
     def prep_work(self):
         self.alts = np.array(self.alts)
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
         self.h = len(self.alts)
-        self.lambdas = np.ones(self.h)  # np.random.randn(self.h)
+        self.lambdas = [18, 19]  # np.ones(self.h)  # np.random.randn(self.h)
         self.nest_lens = [len(x) for x in self.alts]
         # self.V = np.zeros((self.m, self.k))
         self.theta_f = np.append(self.theta_f, self.lambdas)
@@ -145,22 +146,39 @@ class NestedLogitEstimator(ModelEstimator):
                 self.nest_index[j] = i
 
         # Experimental utility function specification
-        self.fixed_parameters = set([0, 4])
-        self.parameters = {
+        self.fixed_parameters = set()  # Set of parameter numbers
+        self.parameters = {  # Parameter number to initial parameter
             0: np.random.rand(),
             1: np.random.rand(),
             2: np.random.rand(),
-            3: 1,
-            4: 1,
+            3: np.random.rand(),
+            4: np.random.rand(),
+            5: np.random.rand(),
+            6: np.random.rand(),
+            7: np.random.rand(),
+            8: np.random.rand(),
+            9: np.random.rand(),
+            10: np.random.rand(),
+            11: np.random.rand(),
+            12: np.random.rand(),
+            13: np.random.rand(),
+            14: np.random.rand(),
+            15: np.random.rand(),
+            16: np.random.rand(),
+            17: np.random.rand(),
+            18: 1,
+            19: 1,
         }
 
-        def u1(X_i, params): np.dot(X_i, params.get(1, 2,  3))
-        self.utility_functions = {
+        def u1(X_i, params): np.dot(X_i, params.get(0, 1, 2, 3, 4, 5))
+        self.utility_functions = {  # Alternative number to utility function
             0: u1,
+            1: u1,
+            2: u1,
         }
 
     def cost_function(self, theta_f, X, y):
-        '''
+        """
         Based on formula (4.2) from:
         K. Train, http://eml.berkeley.edu/books/train1201.pdf
 
@@ -181,7 +199,7 @@ class NestedLogitEstimator(ModelEstimator):
         nest_sums - 2D matrix of e^(V/lambda), m * h
         alts - vector of vectors, maps nest and nested alternative to
                overall alternative, h * (classes in nest)
-        '''
+        """
 
         # TODO: Alternative specific utility functions
         # TODO: Fixed parameters
@@ -195,8 +213,13 @@ class NestedLogitEstimator(ModelEstimator):
         #       def u(X_i, parameters): np.dot(X_i, parameters[...])
         #       { 0 : u(X_i, parameters), ... }
 
-        self.lambdas = theta_f[-1 * self.h:]
-        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+
+        # self.lambdas = theta_f[-1 * self.h:]
+        # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+        for index in range(0, len(theta_f)):
+            self.parameters[index] = theta_f[index]
+
+        # CONVERTING TO CUSTOM UTILITY FUNCTIONS - UP TO HERE
 
         nest_sums = np.zeros((self.m, self.h))
         V = np.zeros((self.m, self.k))
@@ -228,7 +251,7 @@ class NestedLogitEstimator(ModelEstimator):
         return self.cost
 
     def gradient_function(self, theta_f, X, y):
-        '''Serious numerical gradient stuff'''
+        """Serious numerical gradient stuff"""
         self.iteration += 1
         self.lambdas = theta_f[-1 * self.h:]
         self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
@@ -259,24 +282,95 @@ class NestedLogitEstimator(ModelEstimator):
     def calc_d_theta(self, step, initial):
         return step - initial
 
+class NestedLogitEstimatorPreCustomUtility(ModelEstimator):
+    """
+    Copy of the NestedLogitEstimator before I started implementing the custom utility functions.
+    Use this for testing the custom utility functions
+    """
 
-class MultiNomialLogitEstimator(ModelEstimator):
-    '''
-    Based on:
-    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
-    '''
     def prep_work(self):
-        '''No prep work required'''
+        self.alts = np.array(self.alts)
+        self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
+        self.h = len(self.alts)
+        self.lambdas = np.ones(self.h)  # np.random.randn(self.h)
+        self.nest_lens = [len(x) for x in self.alts]
+        # self.V = np.zeros((self.m, self.k))
+        self.theta_f = np.append(self.theta_f, self.lambdas)
+
+        for i, x in enumerate(self.alts):
+            for j in x:
+                self.nest_index[j] = i
 
     def cost_function(self, theta_f, X, y):
-        '''
+        self.lambdas = theta_f[-1 * self.h:]
+        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+
+        nest_sums = np.zeros((self.m, self.h))
+        V = np.zeros((self.m, self.k))
+        for i in range(0, self.m):
+            for l in range(0, self.h):
+                for j in range(0, self.nest_lens[l]):
+                    V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
+                    V[i, self.alts[l][j]] = V_ilj
+                    V_scaled = V_ilj / self.lambdas[l]
+                    nest_sums[i, l] += np.exp(V_scaled)
+
+        P = np.zeros((self.m))
+        for i in range(0, self.m):
+            j = self.y_index[i]
+            l = self.nest_index[j]
+            num = (np.exp(V[i, j] / self.lambdas[l]) *
+                   (nest_sums[i, l] ** (self.lambdas[l] - 1)))
+            dom = 0
+            for l_2 in range(0, self.h):
+                dom += nest_sums[i, l_2] ** self.lambdas[l_2]
+            P[i] = num / dom
+
+        self.cost = - np.sum(np.log(P)) / self.m
+        return self.cost
+
+    def gradient_function(self, theta_f, X, y):
+        self.iteration += 1
+        self.lambdas = theta_f[-1 * self.h:]
+        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+
+        base_cost = self.cost_function(theta_f, self.X, self.y)
+
+        gradient = np.zeros_like(theta_f)
+        for p in range(0, len(theta_f)):
+            theta_p = theta_f[p]
+            step_size = self.sqrt_eps  # * 2.0
+            theta_p_step = theta_p + step_size
+            d_theta_p = theta_p_step - theta_p  # This doesn't work...
+            theta_f_step = np.copy(theta_f)
+            theta_f_step[p] = theta_p_step
+            step_cost = self.cost_function(theta_f_step, self.X, self.y)
+            gradient[p] = ((step_cost - base_cost) / d_theta_p)
+
+        self.grad = gradient
+        return self.grad
+
+    def calc_d_theta(self, step, initial):
+        return step - initial
+
+
+class MultiNomialLogitEstimator(ModelEstimator):
+    """
+    Based on:
+    http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
+    """
+    def prep_work(self):
+        """No prep work required"""
+
+    def cost_function(self, theta_f, X, y):
+        """
         m - number of data points
         n - number of features
         k - number of classes
         X - m * n
         y - m * k
         theta - k * n
-        '''
+        """
 
         theta = np.reshape(theta_f, (self.k, self.n))
         self.theta = theta
@@ -318,7 +412,7 @@ class MultiNomialLogitEstimator(ModelEstimator):
 
 class LogisticRegressionEstimator(ModelEstimator):
     def prep_work(self):
-        '''No prep work required'''
+        """No prep work required"""
 
     def cost_function(self, theta, X, y):
         self.theta = theta
@@ -355,7 +449,7 @@ class LogisticRegressionEstimator(ModelEstimator):
 
 
 class AltLogisticRegressionEstimator(ModelEstimator):
-    '''Testing some alternative math (based on liblinear)'''
+    """Testing some alternative math (based on liblinear)"""
     def prep_work(self):
         self.y[self.y == 0] = -1  # y vector must be (1, -1)
 
