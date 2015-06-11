@@ -49,9 +49,10 @@ class LogitEstimator:
 
     def estimate_nested_model(X, y, C, alts):
         lr_nl = NestedLogitEstimator(X, y, C, alts=alts)
-        init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+        # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+        init_nl_cost = lr_nl.cost_function(lr_nl.parameters, lr_nl.X, lr_nl.y)
         lr_mnl = MultiNomialLogitEstimator(X, y, 999999999)
-        init_mnl_cost = lr_mnl.cost_function(lr_nl.theta, lr_nl.X, lr_nl.y)
+        init_mnl_cost = lr_mnl.cost_function(lr_nl.parameters[:-2], lr_nl.X, lr_nl.y)
 
         lr_nl.estimate()
         print('initial MNL results - cost: %.6f' % init_mnl_cost)
@@ -84,9 +85,9 @@ class ModelEstimator(object):
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        self.theta = np.random.randn(self.k, self.n)
+        # self.theta = np.random.randn(self.k, self.n)
         # self.theta = np.ones((self.k, self.n))
-        self.theta_f = np.ravel(self.theta)
+        # self.theta_f = np.ravel(self.theta)
         self.C = C
         self.cost = None
         self.iteration = 0
@@ -99,9 +100,10 @@ class ModelEstimator(object):
     def estimate(self):
         self.gradient_check(self.cost_function,
                             self.gradient_function,
-                            self.theta_f, self.X, self.y)
+                            # self.theta_f, self.X, self.y)
+                            self.parameters, self.X, self.y)
 
-        self.theta_f = optimize.fmin_bfgs(self.cost_function, self.theta_f,
+        self.parameters = optimize.fmin_bfgs(self.cost_function, self.parameters,
                                           fprime=self.gradient_function, args=(self.X, self.y),
                                           gtol=0.001, disp=False)
 
@@ -136,10 +138,9 @@ class NestedLogitEstimator(ModelEstimator):
         self.alts = np.array(self.alts)
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
         self.h = len(self.alts)
-        self.lambdas = [18, 19]  # np.ones(self.h)  # np.random.randn(self.h)
         self.nest_lens = [len(x) for x in self.alts]
         # self.V = np.zeros((self.m, self.k))
-        self.theta_f = np.append(self.theta_f, self.lambdas)
+        # self.theta_f = np.append(self.theta_f, self.lambdas)
 
         for i, x in enumerate(self.alts):
             for j in x:
@@ -147,35 +148,42 @@ class NestedLogitEstimator(ModelEstimator):
 
         # Experimental utility function specification
         self.fixed_parameters = set()  # Set of parameter numbers
-        self.parameters = {  # Parameter number to initial parameter
-            0: np.random.rand(),
-            1: np.random.rand(),
-            2: np.random.rand(),
-            3: np.random.rand(),
-            4: np.random.rand(),
-            5: np.random.rand(),
-            6: np.random.rand(),
-            7: np.random.rand(),
-            8: np.random.rand(),
-            9: np.random.rand(),
-            10: np.random.rand(),
-            11: np.random.rand(),
-            12: np.random.rand(),
-            13: np.random.rand(),
-            14: np.random.rand(),
-            15: np.random.rand(),
-            16: np.random.rand(),
-            17: np.random.rand(),
-            18: 1,
-            19: 1,
-        }
+        self.parameters = np.array([  # Parameter number to initial parameter
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            np.random.rand(),
+            1,
+            1,
+        ])
 
-        def u1(X_i, params): np.dot(X_i, params.get(0, 1, 2, 3, 4, 5))
-        self.utility_functions = {  # Alternative number to utility function
-            0: u1,
-            1: u1,
-            2: u1,
-        }
+        def u1(X_i, params): return np.dot(X_i, params[[0, 1, 2, 3, 4, 5, 6]])
+        def u2(X_i, params): return np.dot(X_i, params[[7, 8, 9, 10, 11, 12, 13]])
+        def u3(X_i, params): return np.dot(X_i, params[[14, 15, 16, 17, 18, 19, 20]])
+        self.utility_functions = [  # Alternative number to utility function
+            u1,
+            u2,
+            u3,
+        ]
+
+        self.lambda_map = [21, 22]
 
     def cost_function(self, theta_f, X, y):
         """
@@ -213,7 +221,6 @@ class NestedLogitEstimator(ModelEstimator):
         #       def u(X_i, parameters): np.dot(X_i, parameters[...])
         #       { 0 : u(X_i, parameters), ... }
 
-
         # self.lambdas = theta_f[-1 * self.h:]
         # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
         for index in range(0, len(theta_f)):
@@ -226,9 +233,9 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
-                    V_ilj = np.dot(X[i], self.theta[self.alts[l][j]])
+                    V_ilj = self.utility_functions[self.alts[l][j]](X[i], self.parameters)
                     V[i, self.alts[l][j]] = V_ilj
-                    V_scaled = V_ilj / self.lambdas[l]
+                    V_scaled = V_ilj / self.parameters[self.lambda_map[l]]
                     # if V_scaled > 200.0 or V_scaled < -200.0:
                     #     # We are getting very small lambda values sometimes.
                     #     # np.exp(x), where x > 709, causes an overflow
@@ -240,11 +247,11 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             j = self.y_index[i]
             l = self.nest_index[j]
-            num = (np.exp(V[i, j] / self.lambdas[l]) *
-                   (nest_sums[i, l] ** (self.lambdas[l] - 1)))
+            num = (np.exp(V[i, j] / self.parameters[self.lambda_map[l]]) *
+                   (nest_sums[i, l] ** (self.parameters[self.lambda_map[l]])))
             dom = 0
             for l_2 in range(0, self.h):
-                dom += nest_sums[i, l_2] ** self.lambdas[l_2]
+                dom += nest_sums[i, l_2] ** self.parameters[self.lambda_map[l_2]]
             P[i] = num / dom
 
         self.cost = - np.sum(np.log(P)) / self.m
@@ -253,18 +260,20 @@ class NestedLogitEstimator(ModelEstimator):
     def gradient_function(self, theta_f, X, y):
         """Serious numerical gradient stuff"""
         self.iteration += 1
-        self.lambdas = theta_f[-1 * self.h:]
-        self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+        # self.lambdas = theta_f[-1 * self.h:]
+        # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
+        for index in range(0, len(theta_f)):
+            self.parameters[index] = theta_f[index]
 
         base_cost = self.cost_function(theta_f, self.X, self.y)
 
-        gradient = np.zeros_like(theta_f)
-        for p in range(0, len(theta_f)):
-            theta_p = theta_f[p]
+        gradient = np.zeros_like(self.parameters)
+        for p in range(0, len(self.parameters)):
+            theta_p = self.parameters[p]
             step_size = self.sqrt_eps  # * 2.0
             theta_p_step = theta_p + step_size
             d_theta_p = theta_p_step - theta_p  # This doesn't work...
-            theta_f_step = np.copy(theta_f)
+            theta_f_step = np.copy(self.parameters)
             theta_f_step[p] = theta_p_step
             step_cost = self.cost_function(theta_f_step, self.X, self.y)
             gradient[p] = ((step_cost - base_cost) / d_theta_p)
