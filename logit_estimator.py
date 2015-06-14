@@ -48,16 +48,28 @@ class LogitEstimator:
         return lr
 
     def estimate_nested_model(X, y, C, alts):
-        lr_nl = NestedLogitEstimator(X, y, C, alts=alts)
-        # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
-        init_nl_cost = lr_nl.cost_function(lr_nl.parameters, lr_nl.X, lr_nl.y)
-        lr_mnl = MultiNomialLogitEstimator(X, y, 999999999)
-        init_mnl_cost = lr_mnl.cost_function(lr_nl.parameters[:-2], lr_nl.X, lr_nl.y)
+        lr_nl_new = NestedLogitEstimator(X, y, C, alts=alts)
+        lr_nl_old = NestedLogitEstimatorPreCustomUtility(X, y, C, alts=alts)
+        init_nl_cost_new = lr_nl_new.cost_function(lr_nl_new.parameters, lr_nl_new.X, lr_nl_new.y)
+        init_nl_cost_old = lr_nl_old.cost_function(lr_nl_new.parameters, lr_nl_new.X, lr_nl_new.y)
 
-        lr_nl.estimate()
-        print('initial MNL results - cost: %.6f' % init_mnl_cost)
-        print('initial NL results  - cost: %.6f' % init_nl_cost)
-        return lr_nl
+        # lr_nl_new.estimate()
+        # lr_nl_old.estimate()
+        print('initial new NL results - cost: %.6f' % init_nl_cost_new)
+        print('initial old NL results  - cost: %.6f' % init_nl_cost_old)
+        return lr_nl_new
+
+    # def estimate_nested_model(X, y, C, alts):
+    #     lr_nl = NestedLogitEstimator(X, y, C, alts=alts)
+    #     # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
+    #     init_nl_cost = lr_nl.cost_function(lr_nl.parameters, lr_nl.X, lr_nl.y)
+    #     lr_mnl = MultiNomialLogitEstimator(X, y, 999999999)
+    #     init_mnl_cost = lr_mnl.cost_function(lr_nl.parameters[:-2], lr_nl.X, lr_nl.y)
+    #
+    #     lr_nl.estimate()
+    #     print('initial MNL results - cost: %.6f' % init_mnl_cost)
+    #     print('initial NL results  - cost: %.6f' % init_nl_cost)
+    #     return lr_nl
 
     def _estimate_nested_model(X, y, C):
         X = np.array([[1, 2], [0, 0]])
@@ -85,9 +97,9 @@ class ModelEstimator(object):
         self.n = X.shape[1] + 1
         self.m = X.shape[0]
         self.k = self.y.shape[1]
-        # self.theta = np.random.randn(self.k, self.n)
+        self.theta = np.random.randn(self.k, self.n)
         # self.theta = np.ones((self.k, self.n))
-        # self.theta_f = np.ravel(self.theta)
+        self.theta_f = np.ravel(self.theta)
         self.C = C
         self.cost = None
         self.iteration = 0
@@ -100,10 +112,11 @@ class ModelEstimator(object):
     def estimate(self):
         self.gradient_check(self.cost_function,
                             self.gradient_function,
-                            # self.theta_f, self.X, self.y)
-                            self.parameters, self.X, self.y)
+                            self.theta_f, self.X, self.y)
+                            # self.parameters, self.X, self.y)
 
-        self.parameters = optimize.fmin_bfgs(self.cost_function, self.parameters,
+        self.theta_f = optimize.fmin_bfgs(self.cost_function, self.theta_f,
+        # self.parameters = optimize.fmin_bfgs(self.cost_function, self.parameters,
                                           fprime=self.gradient_function, args=(self.X, self.y),
                                           gtol=0.001, disp=False)
 
@@ -120,18 +133,14 @@ class ModelEstimator(object):
 
 
 class NestedLogitEstimator(ModelEstimator):
-    """Nested Logit!
+    """
+    Nested Logit!
 
     Good resources:
         1. http://www.civil.iitb.ac.in/~kvkrao/CE%20780%20
            Behavioural%20Travel%20Modelling/NL.pdf
         2. http://eml.berkeley.edu/books/train1201.pdf
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
-
-    Plan:
-        1. Start with only one nest level and use formula (4.2) from
-           K. Train, http://eml.berkeley.edu/books/train1201.pdf
-        2. Estimate the gradient for this function numerically!
     """
 
     def prep_work(self):
@@ -185,6 +194,9 @@ class NestedLogitEstimator(ModelEstimator):
 
         self.lambda_map = [21, 22]
 
+        # Compatability
+        self.theta_f = self.parameters
+
     def cost_function(self, theta_f, X, y):
         """
         Based on formula (4.2) from:
@@ -211,22 +223,11 @@ class NestedLogitEstimator(ModelEstimator):
 
         # TODO: Alternative specific utility functions
         # TODO: Fixed parameters
-        #
-        # 1. Have a dict of parameters (starting with an initial value)
-        #    and have a set specifying parameters that are fixed
-        #       { 0 : 0.5, ... }
-        #       set([2, 5, ...]) # skip parameters that are in this set
-        # 2. Have a dict of utility functions, each of which takes the
-        #    parameter dict as an input
-        #       def u(X_i, parameters): np.dot(X_i, parameters[...])
-        #       { 0 : u(X_i, parameters), ... }
 
         # self.lambdas = theta_f[-1 * self.h:]
         # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
         for index in range(0, len(theta_f)):
             self.parameters[index] = theta_f[index]
-
-        # CONVERTING TO CUSTOM UTILITY FUNCTIONS - UP TO HERE
 
         nest_sums = np.zeros((self.m, self.h))
         V = np.zeros((self.m, self.k))
@@ -243,6 +244,9 @@ class NestedLogitEstimator(ModelEstimator):
                     #           (V_ilj, str(self.lambdas), V_scaled))
                     nest_sums[i, l] += np.exp(V_scaled)
 
+        print('new')
+        print(nest_sums[0])  # same nest sums!
+
         P = np.zeros((self.m))
         for i in range(0, self.m):
             j = self.y_index[i]
@@ -253,6 +257,12 @@ class NestedLogitEstimator(ModelEstimator):
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.parameters[self.lambda_map[l_2]]
             P[i] = num / dom
+
+            if i < 3:
+                # TODO: NUM IS DIFFERENT!
+                print(str(i) + ' - ' + str(j) + ' - ' + str(l) + ' - ' + str(num) + ' - ' + str(dom))
+
+        print(P)
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
@@ -324,7 +334,10 @@ class NestedLogitEstimatorPreCustomUtility(ModelEstimator):
                     V_scaled = V_ilj / self.lambdas[l]
                     nest_sums[i, l] += np.exp(V_scaled)
 
-        P = np.zeros((self.m))
+        print('old')
+        print(nest_sums[0])
+
+        P = np.zeros(self.m)
         for i in range(0, self.m):
             j = self.y_index[i]
             l = self.nest_index[j]
@@ -334,6 +347,11 @@ class NestedLogitEstimatorPreCustomUtility(ModelEstimator):
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
             P[i] = num / dom
+
+            if i < 3:
+                print(str(i) + ' - ' + str(j) + ' - ' + str(l) + ' - ' + str(num) + ' - ' + str(dom))
+
+        print(P)
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
