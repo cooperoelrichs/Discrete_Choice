@@ -244,25 +244,16 @@ class NestedLogitEstimator(ModelEstimator):
                     #           (V_ilj, str(self.lambdas), V_scaled))
                     nest_sums[i, l] += np.exp(V_scaled)
 
-        print('new')
-        print(nest_sums[0])  # same nest sums!
-
         P = np.zeros((self.m))
         for i in range(0, self.m):
             j = self.y_index[i]
             l = self.nest_index[j]
             num = (np.exp(V[i, j] / self.parameters[self.lambda_map[l]]) *
-                   (nest_sums[i, l] ** (self.parameters[self.lambda_map[l]])))
+                   (nest_sums[i, l] ** (self.parameters[self.lambda_map[l]] - 1.0)))
             dom = 0
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.parameters[self.lambda_map[l_2]]
             P[i] = num / dom
-
-            if i < 3:
-                # TODO: NUM IS DIFFERENT!
-                print(str(i) + ' - ' + str(j) + ' - ' + str(l) + ' - ' + str(num) + ' - ' + str(dom))
-
-        print(P)
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
@@ -334,9 +325,6 @@ class NestedLogitEstimatorPreCustomUtility(ModelEstimator):
                     V_scaled = V_ilj / self.lambdas[l]
                     nest_sums[i, l] += np.exp(V_scaled)
 
-        print('old')
-        print(nest_sums[0])
-
         P = np.zeros(self.m)
         for i in range(0, self.m):
             j = self.y_index[i]
@@ -347,11 +335,6 @@ class NestedLogitEstimatorPreCustomUtility(ModelEstimator):
             for l_2 in range(0, self.h):
                 dom += nest_sums[i, l_2] ** self.lambdas[l_2]
             P[i] = num / dom
-
-            if i < 3:
-                print(str(i) + ' - ' + str(j) + ' - ' + str(l) + ' - ' + str(num) + ' - ' + str(dom))
-
-        print(P)
 
         self.cost = - np.sum(np.log(P)) / self.m
         return self.cost
