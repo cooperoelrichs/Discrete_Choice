@@ -35,19 +35,19 @@ class LogitEstimator:
 
     @staticmethod
     def estimate_home_made_model(x, y, c):
-        lr = LogisticRegressionEstimator(x, y, c)
+        lr = LogisticRegressionEstimator(x, y, c, [])
         lr.estimate()
         return lr
 
     @staticmethod
     def estimate_home_made_model_alt(x, y, c):
-        lr = AltLogisticRegressionEstimator(x, y, c)
+        lr = AltLogisticRegressionEstimator(x, y, c, [])
         lr.estimate()
         return lr
 
     @staticmethod
     def estimate_multinomial_model(x, y, c):
-        lr = MultiNomialLogitEstimator(x, y, c)
+        lr = MultinomialLogitEstimator(x, y, c, [])
         lr.estimate()
         # lr.cost_function(lr.theta, lr.X, lr.y)
         # lr.gradient_function(lr.theta, lr.X, lr.y)
@@ -57,9 +57,10 @@ class LogitEstimator:
     def estimate_nested_model(x, y, c, alts):
         lr_nl = NestedLogitEstimator(x, y, c, alts=alts)
         # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
-        init_nl_cost = lr_nl.cost_function(lr_nl.get_parameters())
-        lr_mnl = MultiNomialLogitEstimator(x, y, 999999999)
-        init_mnl_cost = lr_mnl.cost_function(lr_nl.parameters[:-2], lr_nl.X, lr_nl.y)
+        nl_parameters = lr_nl.get_parameters()
+        init_nl_cost = lr_nl.cost_function(nl_parameters)
+        lr_mnl = MultinomialLogitEstimator(x, y, 999999999, [])
+        init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2], lr_nl.X, lr_nl.y)
 
         lr_nl.estimate()
         print('initial MNL results - cost: %.6f' % init_mnl_cost)
@@ -77,14 +78,14 @@ class LogitEstimator:
         theta_f = np.append(theta_f, lambdas)
 
         lr_nl = NestedLogitEstimator(x, y, c, alts=[[0, 1], [2, 3]])
-        x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
+        # x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
         lr_nl.cost_function(theta_f)
         print('NL results  - cost: %.6f' % lr_nl.cost)
 
 
 class ModelEstimator(object):
     """A home made implimentation of logist.c regression"""
-    def __init__(self, x, y, c, alts=None):
+    def __init__(self, x, y, c, alts):
         np.seterr(all='raise')
         self.X = np.append(np.ones((x.shape[0], 1)), x, axis=1)
         # self.x[0, 0] = 0
@@ -135,23 +136,33 @@ class ModelEstimator(object):
 
         self.gradient_check(self.cost_function,
                             self.gradient_function,
-                            parameters, self.X, self.y)
+                            parameters)
 
         parameters = optimize.fmin_bfgs(self.cost_function, parameters,
-                                        fprime=self.gradient_function, args=(self.X, self.y),
+                                        fprime=self.gradient_function,
                                         gtol=0.001, disp=False)
         return parameters
 
     @staticmethod
     def gradient_check(cost_function, gradient_function,
-                       theta, x, y):
+                       theta):
         grad_check = optimize.check_grad(cost_function,
                                          gradient_function,
-                                         theta, x, y)
+                                         theta)
 
         if abs(grad_check) > 6 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
+
+    @staticmethod
+    def get_parameters():
+        return NotImplementedError("Don't instantiate the Base Class")
+
+    def cost_function(self, parameters):
+        return NotImplementedError("Don't instantiate the Base Class")
+
+    def gradient_function(self, parameters):
+        return NotImplementedError("Don't instantiate the Base Class")
 
 
 class NestedLogitEstimator(ModelEstimator):
@@ -200,11 +211,11 @@ class NestedLogitEstimator(ModelEstimator):
                     v_ilj = self.utility_functions[self.alts[l][j]](self.X[i], parameters)
                     v[i, self.alts[l][j]] = v_ilj
                     v_scaled = v_ilj / parameters[self.lambda_map[l]]
-                    # if v_scaled > 200.0 or v_scaled < -200.0:
-                    #     # We are getting very small lambda values sometimes.
-                    #     # np.exp(x), where x > 709, causes an overflow
-                    #     print('%0.6f - %s - %0.6f' %
-                    #           (v_ilj, str(self.lambdas), v_scaled))
+                    if v_scaled > 200.0 or v_scaled < -200.0:
+                        # We are getting very small lambda values sometimes.
+                        # np.exp(x), where x > 709, causes an overflow
+                        print('%0.6f - %s - %0.6f' %
+                              (v_ilj, str(parameters[-2:]), v_scaled))
                     nest_sums[i, l] += np.exp(v_scaled)
 
         p = np.zeros(self.m)
@@ -218,8 +229,8 @@ class NestedLogitEstimator(ModelEstimator):
                 dom += nest_sums[i, l_2] ** parameters[self.lambda_map[l_2]]
             p[i] = num / dom
 
-        self.cost = - np.sum(np.log(p)) / self.m
-        return self.cost
+        cost = - np.sum(np.log(p)) / self.m
+        return cost
 
     def gradient_function(self, parameters):
         """Serious numerical gradient stuff"""
@@ -227,7 +238,7 @@ class NestedLogitEstimator(ModelEstimator):
         # self.lambdas = theta_f[-1 * self.h:]
         # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
 
-        base_cost = self.cost_function(parameters, self.X, self.y)
+        base_cost = self.cost_function(parameters)
 
         gradient = np.zeros_like(parameters)
         for p in range(0, len(parameters)):
@@ -237,7 +248,7 @@ class NestedLogitEstimator(ModelEstimator):
             d_theta_p = theta_p_step - theta_p  # This doesn't work...
             theta_f_step = np.copy(parameters)
             theta_f_step[p] = theta_p_step
-            step_cost = self.cost_function(theta_f_step, self.X, self.y)
+            step_cost = self.cost_function(theta_f_step)
             gradient[p] = ((step_cost - base_cost) / d_theta_p)
 
             if p == 0:
@@ -247,8 +258,7 @@ class NestedLogitEstimator(ModelEstimator):
                        str(step_cost) + ' - ' +
                        str(gradient[p])))
 
-        self.grad = gradient
-        return self.grad
+        return gradient
 
     @staticmethod
     def get_parameters():
@@ -279,7 +289,7 @@ class NestedLogitEstimator(ModelEstimator):
         ])
 
 
-class MultiNomialLogitEstimator(ModelEstimator):
+class MultinomialLogitEstimator(ModelEstimator):
     """
     Based on:
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
