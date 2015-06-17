@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelBinarizer
 from sklearn import preprocessing
 from scipy import optimize
+from collections import namedtuple
 import numpy as np
 
 
@@ -60,7 +61,7 @@ class LogitEstimator:
         nl_parameters = lr_nl.get_parameters()
         init_nl_cost = lr_nl.cost_function(nl_parameters)
         lr_mnl = MultinomialLogitEstimator(x, y, 999999999, [])
-        init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2], lr_nl.X, lr_nl.y)
+        init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
 
         lr_nl.estimate()
         print('initial MNL results - cost: %.6f' % init_mnl_cost)
@@ -83,11 +84,18 @@ class LogitEstimator:
         print('NL results  - cost: %.6f' % lr_nl.cost)
 
 
+ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
+
+
 class ModelEstimator(object):
-    """A home made implimentation of logist.c regression"""
+    """A home made implementation of logistic regression"""
+
+    # TODO: Refactor this to be a pipeline with no state
+    # TODO: The pipeline should work on a 'Model' object, which holds the model results, parameters, cost, grad, etc.
+
     def __init__(self, x, y, c, alts):
         np.seterr(all='raise')
-        self.X = np.append(np.ones((x.shape[0], 1)), x, axis=1)
+        self.x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
         # self.x[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
         self.y_index = y
@@ -107,7 +115,7 @@ class ModelEstimator(object):
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
         self.h = len(self.alts)
         self.nest_lens = [len(x) for x in self.alts]
-        self.lambda_map = [21, 22]
+        self.lambda_map = [9, 10]
 
         for i, x in enumerate(self.alts):
             for j in x:
@@ -117,13 +125,16 @@ class ModelEstimator(object):
         self.fixed_parameters = set()  # Set of parameter numbers
 
         def u1(x_i, params):
-            return np.dot(x_i, params[[0, 1, 2, 3, 4, 5, 6]])
+            # return np.dot(x_i, params[[0, 1, 2, 3, 4, 5, 6]])
+            return np.dot(x_i[[0, 1, 2]], params[[0, 1, 2]])
 
         def u2(x_i, params):
-            return np.dot(x_i, params[[7, 8, 9, 10, 11, 12, 13]])
+            # return np.dot(x_i, params[[7, 8, 9, 10, 11, 12, 13]])
+            return np.dot(x_i[[0, 3, 4]], params[[3, 4, 5]])
 
         def u3(x_i, params):
-            return np.dot(x_i, params[[14, 15, 16, 17, 18, 19, 20]])
+            # return np.dot(x_i, params[[14, 15, 16, 17, 18, 19, 20]])
+            return np.dot(x_i[[0, 5, 6]], params[[6, 7, 8]])
 
         self.utility_functions = [  # Alternative number to utility function
             u1,
@@ -133,15 +144,17 @@ class ModelEstimator(object):
 
     def estimate(self):
         parameters = self.get_parameters()
-
-        self.gradient_check(self.cost_function,
-                            self.gradient_function,
-                            parameters)
-
+        self.gradient_check(self.cost_function, self.gradient_function, parameters)
         parameters = optimize.fmin_bfgs(self.cost_function, parameters,
                                         fprime=self.gradient_function,
                                         gtol=0.001, disp=False)
-        return parameters
+
+        self.gradient_check(self.cost_function, self.gradient_function, parameters)
+        results = ModelResults(cost=self.cost_function(parameters),
+                               thetas=parameters[:-1 * self.h],
+                               lambdas=parameters[-1 * self.h:],
+                               iteration=self.iteration)
+        return results
 
     @staticmethod
     def gradient_check(cost_function, gradient_function,
@@ -208,7 +221,7 @@ class NestedLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
-                    v_ilj = self.utility_functions[self.alts[l][j]](self.X[i], parameters)
+                    v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
                     v[i, self.alts[l][j]] = v_ilj
                     v_scaled = v_ilj / parameters[self.lambda_map[l]]
                     if v_scaled > 200.0 or v_scaled < -200.0:
@@ -272,18 +285,6 @@ class NestedLogitEstimator(ModelEstimator):
             np.random.rand(),
             np.random.rand(),
             np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
             1.0,
             1.0,
         ])
@@ -294,10 +295,7 @@ class MultinomialLogitEstimator(ModelEstimator):
     Based on:
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
     """
-    def prep_work(self):
-        """No prep work required"""
-
-    def cost_function(self, theta_f, X, y):
+    def cost_function(self, theta_f):
         """
         m - number of data points
         n - number of features
@@ -307,53 +305,46 @@ class MultinomialLogitEstimator(ModelEstimator):
         theta - k * n
         """
 
-        theta = np.reshape(theta_f, (self.k, self.n))
-        self.theta = theta
+        theta = np.reshape(theta_f, (3, 3))  # (self.k, self.n))
         cost = 0
         for i in range(0, self.m):
             for j in range(0, self.k):
-                numerator = np.exp(np.dot(X[i], theta[j]))
+                # numerator = np.exp(np.dot(self.x[i], theta[j]))
+                numerator = np.exp(self.utility_functions[j](self.x[i], theta_f))
                 denominator = 0
                 for l in range(0, self.k):
-                    denominator += np.exp(np.dot(X[i], theta[l]))
-                cost += y[i, j] * np.log(numerator / denominator)
+                    # denominator += np.exp(np.dot(self.x[i], theta[l]))
+                    denominator += np.exp(self.utility_functions[l](self.x[i], theta_f))
+                cost += self.y[i, j] * np.log(numerator / denominator)
 
         # regularisation = (0.5 / self.c * np.sum(theta[:, 1:] ** 2))
         regularisation = (0.5 / self.c * np.sum(theta ** 2))
         cost = (-1 * cost + regularisation) / self.m
-        self.cost = cost
         return cost
 
-    def gradient_function(self, theta_f, X, y):
+    def gradient_function(self, theta_f):
         theta = np.reshape(theta_f, (self.k, self.n))
-        self.theta = theta
         gradient = np.zeros_like(theta)
         for i in range(0, self.m):
             for j in range(0, self.k):
-                numerator = np.exp(np.dot(X[i], theta[j]))
+                numerator = np.exp(np.dot(self.x[i], theta[j]))
                 denominator = 0
                 for l in range(0, self.k):
-                    denominator += np.exp(np.dot(X[i], theta[l]))
-                gradient[j] += X[i] * (y[i, j] - numerator / denominator)
+                    denominator += np.exp(np.dot(self.x[i], theta[l]))
+                gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
 
         penalty_gradient = (1 / self.c) * theta
         # penalty_gradient[:, 0] = 0
         # print(penalty_gradient)
         gradient = (-1 * gradient + penalty_gradient) / self.m
-
-        self.grad = gradient
-        return np.ravel(self.grad)
+        return np.ravel(gradient)
 
 
 class LogisticRegressionEstimator(ModelEstimator):
-    def prep_work(self):
-        """No prep work required"""
-
-    def cost_function(self, theta, X, y):
-        self.theta = theta
-        predicted_probs = self.predict_probs(theta, X)
-        log_likelihood = ((-1 * y) * np.log(predicted_probs) -
-                          (1 - y) * np.log(1 - predicted_probs))
+    def cost_function(self, theta):
+        predicted_probs = self.predict_probs(theta)
+        log_likelihood = ((-1 * self.y) * np.log(predicted_probs) -
+                          (1 - self.y) * np.log(1 - predicted_probs))
 
         regularisation = (0.5 / self.c * np.sum(theta[1:] ** 2))
 
@@ -361,11 +352,10 @@ class LogisticRegressionEstimator(ModelEstimator):
         self.cost = cost
         return cost
 
-    def gradient_function(self, theta, X, y):
-        self.theta = theta
-        predicted_probs = self.predict_probs(theta, X)
-        error = predicted_probs - y
-        objective_grad = np.dot(error, X)
+    def gradient_function(self, theta):
+        predicted_probs = self.predict_probs(theta)
+        error = predicted_probs - self.y
+        objective_grad = np.dot(error, self.x)
 
         penalty_gradient = (1 / self.c) * theta
         penalty_gradient[0] = 0
@@ -373,43 +363,43 @@ class LogisticRegressionEstimator(ModelEstimator):
         gradient = (objective_grad + penalty_gradient) / self.m
         return gradient
 
-    def sigmoid(self, vector):
+    @staticmethod
+    def sigmoid(vector):
         return 1 / (1 + np.exp(- vector))
 
-    def utility(self, theta, X):
+    @staticmethod
+    def utility(theta, X):
         return np.dot(X, theta)
 
-    def predict_probs(self, theta, X):
-        return self.sigmoid(self.utility(theta, X))
+    def predict_probs(self, theta):
+        return self.sigmoid(self.utility(theta, self.x))
 
 
 class AltLogisticRegressionEstimator(ModelEstimator):
     """Testing some alternative math (based on liblinear)"""
-    def prep_work(self):
-        self.y[self.y == 0] = -1  # y vector must be (1, -1)
-
-    def cost_function(self, theta, X, y):
-        self.theta = theta
+    def cost_function(self, theta):
+        y = np.copy(self.y)
+        y[self.y == 0] = -1  # y vector must be (1, -1)
 
         objective_cost = 0
         for i in range(0, self.m):
-            objective_cost += np.log(self.inverted_sigmoid(X[i], y[i]))
+            objective_cost += np.log(self.inverted_sigmoid(self.x[i], y[i]))
 
         regularisation = 0
         for j in range(1, self.n):
             regularisation += 0.5 * theta[j] ** 2
 
         cost = (regularisation / self.c + objective_cost) / self.m
-        self.cost = cost
         return cost
 
-    def gradient_function(self, theta, X, y):
-        self.theta = theta
+    def gradient_function(self, theta):
+        y = np.copy(self.y)
+        y[self.y == 0] = -1  # y vector must be (1, -1)
 
         objective_grad = np.zeros_like(theta)
         for i in range(0, self.m):
-            grad_mat = (((1 / self.inverted_sigmoid(X[i], y[i])) - 1) *
-                        y[i] * X[i])
+            grad_mat = (((1 / self.inverted_sigmoid(self.x[i], y[i])) - 1) *
+                        y[i] * self.x[i])
             for j in range(0, self.n):
                 objective_grad[j] += grad_mat[j]
 
@@ -419,8 +409,8 @@ class AltLogisticRegressionEstimator(ModelEstimator):
         gradient = (regularisation_grad / self.c + objective_grad) / self.m
         return gradient
 
-    def inverted_sigmoid(self, X_i, y_i):
+    def inverted_sigmoid(self, x_i, y_i):
         sum = 0
         for j in range(0, self.n):
-            sum += self.theta[j] * X_i[j]
+            sum += self.theta[j] * x_i[j]
         return 1 + np.exp(-1 * y_i * sum)
