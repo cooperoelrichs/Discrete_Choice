@@ -25,26 +25,15 @@ def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):
 file_name = 'swissmetro.dat'
 data = genfromtxt(file_name, delimiter='\t', skip_header=1)
 headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
-full_data_len = len(data)
-
 data = data[data[:, -1] != 0]  # choice != 0
-filtered_choice_data_len = len(data)
-
 data = data[data[:, 15] != 0]  # car_av
-with_car_data_len = len(data)
-
 data = data[data[:, 16] != 0]  # train_av
-with_train_data_len = len(data)
-
 data = data[data[:, 2] != 0]  # sp
-with_sp_data_len = len(data)
-
-print('%i - %i - %i - %i - %i' % (full_data_len, filtered_choice_data_len, with_car_data_len,
-                                  with_train_data_len, with_sp_data_len))
 
 columns = [18, 19, 21, 22, 25, 26]
 y = data[:, -1] - 1
 X = data[:, columns]
+X /= 100  # scale the costs and travel times
 #          [4, 5, 6, 7, 8, 9, 10, 11, 12,
 #           15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]]
 
