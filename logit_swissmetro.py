@@ -1,5 +1,5 @@
 # from sklearn import datasets
-from logit_estimator import LogitEstimator
+from logit_estimation_runner import LogitEstimationRunner
 import time
 from numpy import genfromtxt
 from numpy import unique
@@ -44,16 +44,16 @@ print(X[:4])
 C = 0.01
 alts = [[0, 2], [1]]
 
-scaler = LogitEstimator.scaler(X)
+scaler = LogitEstimationRunner.scaler(X)
 X_scaled = scaler.transform(X)
 
 start = time.clock()
-my_nl = LogitEstimator.estimate_nested_model(X_scaled, y, C, alts)
+my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts)
 my_nl_time = time.clock() - start
 
-start = time.clock()
-my_mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
-my_mnl_time = time.clock() - start
+# start = time.clock()
+# my_mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
+# my_mnl_time = time.clock() - start
 
-print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
-print_run_results('NL', my_nl.theta, my_nl.cost, my_nl_time, my_nl.lambdas)
+# print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
+print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)

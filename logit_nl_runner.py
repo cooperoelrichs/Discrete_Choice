@@ -1,5 +1,5 @@
 from sklearn import datasets
-from logit_estimator import LogitEstimator
+from logit_estimation_runner import LogisticRegressionEstimator
 import time
 
 
@@ -21,15 +21,15 @@ X, y = datasets.make_classification(n_samples=1000,
 C = 0.01
 alts = [[0, 1, 5], [2], [3, 4]]
 
-scaler = LogitEstimator.scaler(X)
+scaler = LogisticRegressionEstimator.scaler(X)
 X_scaled = scaler.transform(X)
 
 start = time.clock()
-my_nl = LogitEstimator.estimate_nested_model(X_scaled, y, C, alts)
+my_nl = LogisticRegressionEstimator.estimate_nested_model(X_scaled, y, C, alts)
 my_nl_time = time.clock() - start
 
 start = time.clock()
-my_mnl = LogitEstimator.estimate_multinomial_model(X_scaled, y, C)
+my_mnl = LogisticRegressionEstimator.estimate_multinomial_model(X_scaled, y, C)
 my_mnl_time = time.clock() - start
 
 print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
