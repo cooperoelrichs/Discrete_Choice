@@ -3,85 +3,10 @@
 # This is a prototype class for estimating discrete choice logit models
 # Python 3.4 64 bit with SciPy
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelBinarizer
-from sklearn import preprocessing
 from scipy import optimize
 from collections import namedtuple
 import numpy as np
-
-
-class LogitEstimator:
-    """This class just prepares and runs actual model estimation classes"""
-    
-    @staticmethod
-    def scaler(x):
-        return preprocessing.StandardScaler().fit(x)
-
-    @staticmethod
-    def estimate_scikit_learn_model(x, y, c):
-        """Estimate a scikit-learn multinomial logit model"""
-        x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
-        # x[0, 0] = 0
-
-        # Add a ones column to x rather than fitting the intercept
-        lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
-                                  C=c, fit_intercept=False,
-                                  class_weight='auto',
-                                  multi_class='multinomial',
-                                  solver='lbfgs')
-
-        lr_r.fit(x, y)
-        return lr_r
-
-    @staticmethod
-    def estimate_home_made_model(x, y, c):
-        lr = LogisticRegressionEstimator(x, y, c, [])
-        lr.estimate()
-        return lr
-
-    @staticmethod
-    def estimate_home_made_model_alt(x, y, c):
-        lr = AltLogisticRegressionEstimator(x, y, c, [])
-        lr.estimate()
-        return lr
-
-    @staticmethod
-    def estimate_multinomial_model(x, y, c):
-        lr = MultinomialLogitEstimator(x, y, c, [])
-        lr.estimate()
-        # lr.cost_function(lr.theta, lr.X, lr.y)
-        # lr.gradient_function(lr.theta, lr.X, lr.y)
-        return lr
-
-    @staticmethod
-    def estimate_nested_model(x, y, c, alts):
-        lr_nl = NestedLogitEstimator(x, y, c, alts=alts)
-        # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
-        nl_parameters = lr_nl.get_parameters()
-        init_nl_cost = lr_nl.cost_function(nl_parameters)
-        lr_mnl = MultinomialLogitEstimator(x, y, 999999999, [])
-        init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
-
-        lr_nl.estimate()
-        print('initial MNL results - cost: %.6f' % init_mnl_cost)
-        print('initial NL results  - cost: %.6f' % init_nl_cost)
-        return lr_nl
-
-    @staticmethod
-    def _estimate_nested_model(x, y, c):
-        x = np.array([[1, 2], [0, 0]])
-        theta = np.array([[2, 0, 2], [-1, 2, 1], [0, 1, 0], [0, 0, 0]])
-        lambdas = np.array([0.5, 1])
-        y = np.array([0, 1, 2, 3])
-
-        theta_f = np.ravel(theta)
-        theta_f = np.append(theta_f, lambdas)
-
-        lr_nl = NestedLogitEstimator(x, y, c, alts=[[0, 1], [2, 3]])
-        # x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
-        lr_nl.cost_function(theta_f)
-        print('NL results  - cost: %.6f' % lr_nl.cost)
 
 
 ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
@@ -89,9 +14,6 @@ ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
 
 class ModelEstimator(object):
     """A home made implementation of logistic regression"""
-
-    # TODO: Refactor this to be a pipeline with no state
-    # TODO: The pipeline should work on a 'Model' object, which holds the model results, parameters, cost, grad, etc.
 
     def __init__(self, x, y, c, alts):
         np.seterr(all='raise')
@@ -115,26 +37,23 @@ class ModelEstimator(object):
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
         self.h = len(self.alts)
         self.nest_lens = [len(x) for x in self.alts]
-        self.lambda_map = [9, 10]
+        self.lambda_map = [5, 6]
 
         for i, x in enumerate(self.alts):
             for j in x:
                 self.nest_index[j] = i
 
         # Experimental utility function specification
-        self.fixed_parameters = set()  # Set of parameter numbers
+        self.fixed_parameters = set([6])  # Set of parameter numbers
 
         def u1(x_i, params):
-            # return np.dot(x_i, params[[0, 1, 2, 3, 4, 5, 6]])
-            return np.dot(x_i[[0, 1, 2]], params[[0, 1, 2]])
+            return np.dot(x_i[[0, 1, 2]], params[[0, 3, 4]])
 
         def u2(x_i, params):
-            # return np.dot(x_i, params[[7, 8, 9, 10, 11, 12, 13]])
-            return np.dot(x_i[[0, 3, 4]], params[[3, 4, 5]])
+            return np.dot(x_i[[0, 3, 4]], params[[1, 3, 4]])
 
         def u3(x_i, params):
-            # return np.dot(x_i, params[[14, 15, 16, 17, 18, 19, 20]])
-            return np.dot(x_i[[0, 5, 6]], params[[6, 7, 8]])
+            return np.dot(x_i[[0, 5, 6]], params[[2, 3, 4]])
 
         self.utility_functions = [  # Alternative number to utility function
             u1,
@@ -169,13 +88,13 @@ class ModelEstimator(object):
 
     @staticmethod
     def get_parameters():
-        return NotImplementedError("Don't instantiate the Base Class")
+        raise NotImplementedError("Don't instantiate the Base Class")
 
     def cost_function(self, parameters):
-        return NotImplementedError("Don't instantiate the Base Class")
+        raise NotImplementedError("Don't instantiate the Base Class")
 
     def gradient_function(self, parameters):
-        return NotImplementedError("Don't instantiate the Base Class")
+        raise NotImplementedError("Don't instantiate the Base Class")
 
 
 class NestedLogitEstimator(ModelEstimator):
@@ -213,8 +132,7 @@ class NestedLogitEstimator(ModelEstimator):
                overall alternative, h * (classes in nest)
         """
 
-        # TODO: Alternative specific utility functions
-        # TODO: Fixed parameters
+        # TODO: Get the MNL estimator running, for comparison purposes!
 
         nest_sums = np.zeros((self.m, self.h))
         v = np.zeros((self.m, self.k))
@@ -255,31 +173,37 @@ class NestedLogitEstimator(ModelEstimator):
 
         gradient = np.zeros_like(parameters)
         for p in range(0, len(parameters)):
-            theta_p = parameters[p]
-            step_size = self.sqrt_eps  # * 2.0
-            theta_p_step = theta_p + step_size
-            d_theta_p = theta_p_step - theta_p  # This doesn't work...
-            theta_f_step = np.copy(parameters)
-            theta_f_step[p] = theta_p_step
-            step_cost = self.cost_function(theta_f_step)
-            gradient[p] = ((step_cost - base_cost) / d_theta_p)
+            if p in self.fixed_parameters:
+                gradient[p] = 0.0
+            else:
+                theta_p = parameters[p]
+                step_size = self.sqrt_eps  # * 2.0
+                theta_p_step = theta_p + step_size
+                d_theta_p = theta_p_step - theta_p  # This doesn't work...
+                theta_f_step = np.copy(parameters)
+                theta_f_step[p] = theta_p_step
+                step_cost = self.cost_function(theta_f_step)
+                gradient[p] = ((step_cost - base_cost) / d_theta_p)
 
-            if p == 0:
-                print((str(self.iteration) + ' - ' +
-                       str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
-                       str(base_cost) + ' - ' +
-                       str(step_cost) + ' - ' +
-                       str(gradient[p])))
+                if p == 0:
+                    print((str(self.iteration) + ' - ' +
+                           str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
+                           str(base_cost) + ' - ' +
+                           str(step_cost) + ' - ' +
+                           str(gradient[p])))
 
         return gradient
 
     @staticmethod
     def get_parameters():
+        # ASC_CAR = Beta('ASC_CAR',-0.167,-10,10,0)
+        # ASC_TRAIN = Beta('ASC_TRAIN',-0.512,-10,10,0)
+        # ASC_SM = Beta('ASC_SM',0,-10,10,1)
+        # B_TIME = Beta('B_TIME',-0.899,-10,10,0)
+        # B_COST = Beta('B_COST',-0.857,-10,10,0)
+        # MU = Beta('MU',2.05,1,10,0)
+
         return np.array([  # Parameter number to initial parameter
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
             np.random.rand(),
             np.random.rand(),
             np.random.rand(),
@@ -334,8 +258,6 @@ class MultinomialLogitEstimator(ModelEstimator):
                 gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
 
         penalty_gradient = (1 / self.c) * theta
-        # penalty_gradient[:, 0] = 0
-        # print(penalty_gradient)
         gradient = (-1 * gradient + penalty_gradient) / self.m
         return np.ravel(gradient)
 
