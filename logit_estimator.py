@@ -15,54 +15,21 @@ ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
 class ModelEstimator(object):
     """A home made implementation of logistic regression"""
 
-    def __init__(self, x, y, c, alts):
+    def __init__(self, x, y, c):
         np.seterr(all='raise')
         self.x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
-        # self.x[0, 0] = 0
         self.y = LabelBinarizer().fit_transform(y)
         self.y_index = y
         self.n = x.shape[1] + 1
         self.m = x.shape[0]
         self.k = self.y.shape[1]
-        # self.theta = np.random.randn(self.k, self.n)
-        # self.theta_f = np.ravel(self.theta)
         self.c = c
         self.cost = None
         self.iteration = 0
-        machine_epsilon = np.finfo(np.float64).eps
-        self.sqrt_eps = np.sqrt(machine_epsilon)
-
-        # Migrated from the NL prep_work function
-        self.alts = np.array(alts)
-        self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
-        self.h = len(self.alts)
-        self.nest_lens = [len(x) for x in self.alts]
-        self.lambda_map = [5, 6]
-
-        for i, x in enumerate(self.alts):
-            for j in x:
-                self.nest_index[j] = i
-
-        # Experimental utility function specification
-        self.fixed_parameters = set([6])  # Set of parameter numbers
-
-        def u1(x_i, params):
-            return np.dot(x_i[[0, 1, 2]], params[[0, 3, 4]])
-
-        def u2(x_i, params):
-            return np.dot(x_i[[0, 3, 4]], params[[1, 3, 4]])
-
-        def u3(x_i, params):
-            return np.dot(x_i[[0, 5, 6]], params[[2, 3, 4]])
-
-        self.utility_functions = [  # Alternative number to utility function
-            u1,
-            u2,
-            u3,
-        ]
+        self.sqrt_eps = np.sqrt(np.finfo(np.float64).eps)
 
     def estimate(self):
-        parameters = self.get_parameters()
+        parameters = self.initial_parameters
         self.gradient_check(self.cost_function, self.gradient_function, parameters)
         parameters = optimize.fmin_bfgs(self.cost_function, parameters,
                                         fprime=self.gradient_function,
@@ -86,9 +53,9 @@ class ModelEstimator(object):
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
 
-    @staticmethod
-    def get_parameters():
-        raise NotImplementedError("Don't instantiate the Base Class")
+    # @staticmethod
+    # def get_parameters():
+    #     raise NotImplementedError("Don't instantiate the Base Class")
 
     def cost_function(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
@@ -108,6 +75,23 @@ class NestedLogitEstimator(ModelEstimator):
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
     """
 
+    def __init__(self, x, y, c, alts, initial_parameters, fixed_parameters, utility_functions):
+        super(NestedLogitEstimator, self).__init__(x, y, c)
+
+        self.alts = np.array(alts)
+        self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
+        self.h = len(self.alts)
+        self.nest_lens = [len(x) for x in self.alts]
+        self.lambda_map = [5, 6]
+
+        for i, x in enumerate(self.alts):
+            for j in x:
+                self.nest_index[j] = i
+
+        self.initial_parameters = initial_parameters
+        self.fixed_parameters = fixed_parameters
+        self.utility_functions = utility_functions
+
     def cost_function(self, parameters):
         """
         Based on formula (4.2) from:
@@ -121,15 +105,6 @@ class NestedLogitEstimator(ModelEstimator):
         j - class, subset some nest l, [1, ..., k]
         i - current experiment, [1, ..., m]
         l - nest, [1, ..., h]
-
-        Storage containers
-        v - 2D matrix of utilities, m * k
-        theta - vector of utility parameters, m
-        lambdas - vector of nest parameters, h
-        nest_lens - vector of nest lengths, h
-        nest_sums - 2D matrix of e^(v/lambda), m * h
-        alts - vector of vectors, maps nest and nested alternative to
-               overall alternative, h * (classes in nest)
         """
 
         # TODO: Get the MNL estimator running, for comparison purposes!
@@ -194,32 +169,19 @@ class NestedLogitEstimator(ModelEstimator):
 
         return gradient
 
-    @staticmethod
-    def get_parameters():
-        # ASC_CAR = Beta('ASC_CAR',-0.167,-10,10,0)
-        # ASC_TRAIN = Beta('ASC_TRAIN',-0.512,-10,10,0)
-        # ASC_SM = Beta('ASC_SM',0,-10,10,1)
-        # B_TIME = Beta('B_TIME',-0.899,-10,10,0)
-        # B_COST = Beta('B_COST',-0.857,-10,10,0)
-        # MU = Beta('MU',2.05,1,10,0)
-
-        return np.array([  # Parameter number to initial parameter
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            np.random.rand(),
-            1.0,
-            1.0,
-        ])
-
 
 class MultinomialLogitEstimator(ModelEstimator):
     """
     Based on:
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
     """
-    def cost_function(self, theta_f):
+
+    def __init__(self, x, y, c):
+        super(MultinomialLogitEstimator, self).__init__(x, y, c)
+        self.theta = np.random.randn(self.k, self.n)
+        self.initial_parameters = np.ravel(self.theta)
+
+    def cost_function(self, parameters):
         """
         m - number of data points
         n - number of features
@@ -229,16 +191,16 @@ class MultinomialLogitEstimator(ModelEstimator):
         theta - k * n
         """
 
-        theta = np.reshape(theta_f, (3, 3))  # (self.k, self.n))
+        theta = np.reshape(parameters, (self.k, self.n))
         cost = 0
         for i in range(0, self.m):
             for j in range(0, self.k):
-                # numerator = np.exp(np.dot(self.x[i], theta[j]))
-                numerator = np.exp(self.utility_functions[j](self.x[i], theta_f))
+                numerator = np.exp(np.dot(self.x[i], theta[j]))
+                # numerator = np.exp(self.utility_functions[j](self.x[i], parameters))
                 denominator = 0
                 for l in range(0, self.k):
-                    # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(self.utility_functions[l](self.x[i], theta_f))
+                    denominator += np.exp(np.dot(self.x[i], theta[l]))
+                    # denominator += np.exp(self.utility_functions[l](self.x[i], parameters))
                 cost += self.y[i, j] * np.log(numerator / denominator)
 
         # regularisation = (0.5 / self.c * np.sum(theta[:, 1:] ** 2))
@@ -246,8 +208,9 @@ class MultinomialLogitEstimator(ModelEstimator):
         cost = (-1 * cost + regularisation) / self.m
         return cost
 
-    def gradient_function(self, theta_f):
-        theta = np.reshape(theta_f, (self.k, self.n))
+    def gradient_function(self, parameters):
+        self.iteration += 1
+        theta = np.reshape(parameters, (self.k, self.n))
         gradient = np.zeros_like(theta)
         for i in range(0, self.m):
             for j in range(0, self.k):
@@ -256,6 +219,10 @@ class MultinomialLogitEstimator(ModelEstimator):
                 for l in range(0, self.k):
                     denominator += np.exp(np.dot(self.x[i], theta[l]))
                 gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
+
+        print((str(self.iteration) + ' - ' +
+               str(parameters[0]) + ' - ' +
+               str(gradient[0][0])))
 
         penalty_gradient = (1 / self.c) * theta
         gradient = (-1 * gradient + penalty_gradient) / self.m

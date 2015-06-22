@@ -42,17 +42,20 @@ class LogitEstimationRunner:
 
     @staticmethod
     def estimate_multinomial_model(x, y, c):
-        lr = MultinomialLogitEstimator(x, y, c, [])
+        lr = MultinomialLogitEstimator(x, y, c)
         lr.estimate()
         # lr.cost_function(lr.theta, lr.X, lr.y)
         # lr.gradient_function(lr.theta, lr.X, lr.y)
         return lr
 
     @staticmethod
-    def estimate_nested_model(x, y, c, alts):
-        lr_nl = NestedLogitEstimator(x, y, c, alts=alts)
+    def estimate_nested_model(x, y, c, alts, initial_parameters, fixed_parameters, utility_functions):
+        lr_nl = NestedLogitEstimator(x, y, c, alts=alts,
+                                     initial_parameters=initial_parameters,
+                                     fixed_parameters=fixed_parameters,
+                                     utility_functions=utility_functions)
         # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
-        nl_parameters = lr_nl.get_parameters()
+        nl_parameters = lr_nl.initial_parameters
         init_nl_cost = lr_nl.cost_function(nl_parameters)
         # lr_mnl = MultinomialLogitEstimator(x, y, 999999999, [])
         # init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
