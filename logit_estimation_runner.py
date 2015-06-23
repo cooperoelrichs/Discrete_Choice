@@ -1,5 +1,6 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn import preprocessing
+from logit_estimator import ModelResults
 import numpy as np
 from logit_estimator import NestedLogitEstimator, LogisticRegressionEstimator,\
     AltLogisticRegressionEstimator, MultinomialLogitEstimator
@@ -13,20 +14,32 @@ class LogitEstimationRunner:
         return preprocessing.StandardScaler().fit(x)
 
     @staticmethod
+    def print_run_results(model_name, coefficients, cost, run_time, lambdas='not_given'):
+        print('%s results' % model_name)
+        print(' - coefficients:')
+        print(coefficients)
+        print(' - lambdas: ' + str(lambdas))
+        print(' - cost: %.6f' % cost)
+        print(' - run time: %.6f' % run_time)
+
+    @staticmethod
     def estimate_scikit_learn_model(x, y, c):
         """Estimate a scikit-learn multinomial logit model"""
-        x = np.append(np.ones((x.shape[0], 1)), x, axis=1)
-        # x[0, 0] = 0
-
-        # Add a ones column to x rather than fitting the intercept
         lr_r = LogisticRegression(penalty='l2', dual=False, tol=0.0000001,
                                   C=c, fit_intercept=False,
                                   class_weight='auto',
                                   multi_class='multinomial',
                                   solver='lbfgs')
 
-        lr_r.fit(x, y)
-        return lr_r
+        # Add a ones column to x rather than fitting the intercept
+        x_extended = np.append(np.ones((x.shape[0], 1)), x, axis=1)
+        lr_r.fit(x_extended, y)
+
+        my_lr_temp = MultinomialLogitEstimator(x, y, c)
+        return ModelResults(cost=my_lr_temp.cost_function(np.ravel(lr_r.coef_)),
+                            thetas=lr_r.coef_,
+                            lambdas=[],
+                            iteration=None)
 
     @staticmethod
     def estimate_home_made_model(x, y, c):
