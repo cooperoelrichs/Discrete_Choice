@@ -58,14 +58,16 @@ initial_parameters = np.array([
 
 fixed_parameters = set([6])  # Set of parameter numbers
 
+parameter_indices = [[0, 3, 4], [1, 3, 4], [2, 3, 4]]
+
 def u1(x_i, params):
-    return np.dot(x_i[[0, 1, 2]], params[[0, 3, 4]])
+    return np.dot(x_i[[0, 1, 2]], params)  # [[0, 3, 4]])
 
 def u2(x_i, params):
-    return np.dot(x_i[[0, 3, 4]], params[[1, 3, 4]])
+    return np.dot(x_i[[0, 3, 4]], params)  # [[1, 3, 4]])
 
 def u3(x_i, params):
-    return np.dot(x_i[[0, 5, 6]], params[[2, 3, 4]])
+    return np.dot(x_i[[0, 5, 6]], params)  # [[2, 3, 4]])
 
 utility_functions = [u1, u2, u3]
 
@@ -76,7 +78,10 @@ utility_functions = [u1, u2, u3]
 
 start = time.clock()
 my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C,
-                                                          initial_parameters, fixed_parameters, utility_functions)
+                                                          initial_parameters[:5],
+                                                          parameter_indices,
+                                                          fixed_parameters,
+                                                          utility_functions)
 my_mnl_time = time.clock() - start
 
 LogitEstimationRunner.print_run_results('MNL', my_mnl.thetas, my_mnl.cost, my_mnl_time)

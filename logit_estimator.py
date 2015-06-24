@@ -181,12 +181,12 @@ class MultinomialLogitEstimator(ModelEstimator):
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
     """
 
-    def __init__(self, x, y, c, initial_parameters, fixed_parameters, utility_functions):
+    def __init__(self, x, y, c, initial_parameters, parameter_indices, fixed_parameters, utility_functions):
         super(MultinomialLogitEstimator, self).__init__(x, y, c)
         self.theta = np.random.randn(self.k, self.n)
-        self.initial_parameters = np.ravel(self.theta)
 
         self.initial_parameters = initial_parameters
+        self.parameter_indices = parameter_indices
         self.fixed_parameters = fixed_parameters
         self.utility_functions = utility_functions
 
@@ -205,11 +205,11 @@ class MultinomialLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for j in range(0, self.k):
                 # numerator = np.exp(np.dot(self.x[i], theta[j]))
-                numerator = np.exp(self.utility_functions[j](self.x[i], parameters))
+                numerator = np.exp(self.utility_functions[j](self.x[i], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters))
+                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters[self.parameter_indices[l]]))
                 cost += self.y[i, j] * np.log(numerator / denominator)
 
         # regularisation = (0.5 / self.c * np.sum(theta[:, 1:] ** 2))
@@ -226,30 +226,25 @@ class MultinomialLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for j in range(0, self.k):
                 # numerator = np.exp(np.dot(self.x[i], theta[j]))
-                numerator = np.exp(self.utility_functions[j](self.x[i], parameters))
+                numerator = np.exp(self.utility_functions[j](self.x[i], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters))
+                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters[self.parameter_indices[l]]))
 
-                print(numerator)
-                print(denominator)
-                print(self.x[i] * (self.y[i, j] - numerator / denominator))
-                print(gradient[j])
+                # print(numerator)
+                # print(denominator)
+                # print(self.x[i] * (self.y[i, j] - numerator / denominator))
+                # print(gradient)
+                # print(self.parameter_indices[j])
+                # print(gradient[self.parameter_indices[j]])
 
-                # This model for updating the gradient vector does not work with the utility functions...
-                #
-                # We should only multiply by the x values that are used in the utility functions (e.g. x[i][[0, 1, 2]])
-                # and we should only += the gradients of the parameters that are used in the cost functions
-                # (e.g. gradient[[0, 3, 4]]).
-                #
-                # Or we can have zeros for the rest of the gradient values so that the += does nothing
-
-                gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
+                # gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
+                gradient[self.parameter_indices[j]] += self.x[i, self.parameter_indices[j]] * (self.y[i, j] - numerator / denominator)
 
         print((str(self.iteration) + ' - ' +
                str(parameters[0]) + ' - ' +
-               str(gradient[0][0])))
+               str(gradient)))
 
         # penalty_gradient = (1 / self.c) * theta
         penalty_gradient = (1 / self.c) * parameters

@@ -54,9 +54,10 @@ class LogitEstimationRunner:
         return lr
 
     @staticmethod
-    def estimate_multinomial_model(x, y, c, initial_parameters, fixed_parameters, utility_functions):
+    def estimate_multinomial_model(x, y, c, initial_parameters, parameter_indices, fixed_parameters, utility_functions):
         lr = MultinomialLogitEstimator(x, y, c,
                                        initial_parameters=initial_parameters,
+                                       parameter_indices=parameter_indices,
                                        fixed_parameters=fixed_parameters,
                                        utility_functions=utility_functions)
         results = lr.estimate()
