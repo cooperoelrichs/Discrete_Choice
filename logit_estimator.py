@@ -45,7 +45,7 @@ class ModelEstimator(object):
                                          gradient_function,
                                          theta)
 
-        if abs(grad_check) > 6 * 10**-6:
+        if abs(grad_check) > 2 * 10**-5:  # 1 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
 
@@ -181,14 +181,14 @@ class MultinomialLogitEstimator(ModelEstimator):
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
     """
 
-    def __init__(self, x, y, c, initial_parameters, parameter_indices, fixed_parameters, utility_functions):
+    def __init__(self, x, y, c, initial_parameters, parameter_indices, fixed_parameters, variable_indices):
         super(MultinomialLogitEstimator, self).__init__(x, y, c)
         self.theta = np.random.randn(self.k, self.n)
 
         self.initial_parameters = initial_parameters
         self.parameter_indices = parameter_indices
         self.fixed_parameters = fixed_parameters
-        self.utility_functions = utility_functions
+        self.variable_indices = variable_indices
 
     def cost_function(self, parameters):
         """
@@ -203,16 +203,17 @@ class MultinomialLogitEstimator(ModelEstimator):
         # theta = np.reshape(parameters, (self.k, self.n))
         cost = 0
         for i in range(0, self.m):
+            # j = self.y_index[i]
             for j in range(0, self.k):
                 # numerator = np.exp(np.dot(self.x[i], theta[j]))
-                numerator = np.exp(self.utility_functions[j](self.x[i], parameters[self.parameter_indices[j]]))
+                numerator = np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters[self.parameter_indices[l]]))
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[j]],
+                                                 parameters[self.parameter_indices[l]]))
                 cost += self.y[i, j] * np.log(numerator / denominator)
 
-        # regularisation = (0.5 / self.c * np.sum(theta[:, 1:] ** 2))
         # regularisation = (0.5 / self.c * np.sum(theta ** 2))
         regularisation = (0.5 / self.c * np.sum(parameters ** 2))
         cost = (-1 * cost + regularisation) / self.m
@@ -226,24 +227,18 @@ class MultinomialLogitEstimator(ModelEstimator):
         for i in range(0, self.m):
             for j in range(0, self.k):
                 # numerator = np.exp(np.dot(self.x[i], theta[j]))
-                numerator = np.exp(self.utility_functions[j](self.x[i], parameters[self.parameter_indices[j]]))
+                numerator = np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(self.utility_functions[l](self.x[i], parameters[self.parameter_indices[l]]))
-
-                # print(numerator)
-                # print(denominator)
-                # print(self.x[i] * (self.y[i, j] - numerator / denominator))
-                # print(gradient)
-                # print(self.parameter_indices[j])
-                # print(gradient[self.parameter_indices[j]])
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[l]]))
 
                 # gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
-                gradient[self.parameter_indices[j]] += self.x[i, self.parameter_indices[j]] * (self.y[i, j] - numerator / denominator)
+                gradient[self.parameter_indices[j]] += self.x[i, self.variable_indices[j]] * (self.y[i, j] - numerator / denominator)
 
         print((str(self.iteration) + ' - ' +
                str(parameters[0]) + ' - ' +
+               str(self.y[i]) + ' - ' +
                str(gradient)))
 
         # penalty_gradient = (1 / self.c) * theta
