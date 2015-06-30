@@ -25,8 +25,6 @@ columns = [18, 19, 21, 22, 25, 26]
 y = data[:, -1] - 1
 X = data[:, columns]
 X /= 100  # scale the costs and travel times
-#          [4, 5, 6, 7, 8, 9, 10, 11, 12,
-#           15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]]
 
 print(headers[columns])
 print(unique(y))
@@ -52,40 +50,40 @@ initial_parameters = np.array([
     np.random.rand(),
     np.random.rand(),
     np.random.rand(),
-    # 1.0,
-    # 1.0,
+    1.0,
+    1.0,
 ])
 
-fixed_parameters = set([6])  # Set of parameter numbers
+fixed_parameters = set([5, 6])  # Set of parameter numbers
 
 parameter_indices = [[0, 3, 4], [1, 3, 4], [2, 3, 4]]
-# parameter_indices = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
 variable_indices = [[0, 1, 2], [0, 3, 4], [0, 5, 6]]
-# variable_indices = [[0, 1, 2], [0, 1, 2], [0, 1, 2]]
 
-def u1(x_i, params):
-    return np.dot(x_i[[0, 1, 2]], params)  # [[0, 3, 4]])
+def u1(x_i, parameters):
+    return np.dot(x_i[[0, 1, 2]], parameters[[0, 3, 4]])
 
-def u2(x_i, params):
-    return np.dot(x_i[[0, 3, 4]], params)  # [[1, 3, 4]])
+def u2(x_i, parameters):
+    return np.dot(x_i[[0, 3, 4]], parameters[[1, 3, 4]])
 
-def u3(x_i, params):
-    return np.dot(x_i[[0, 5, 6]], params)  # [[2, 3, 4]])
+def u3(x_i, parameters):
+    return np.dot(x_i[[0, 5, 6]], parameters[[2, 3, 4]])
 
 utility_functions = [u1, u2, u3]
 
-# start = time.clock()
-# my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts, initial_parameters,
-#                                                     fixed_parameters, utility_functions)
-# my_nl_time = time.clock() - start
+start = time.clock()
+my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts,
+                                                    initial_parameters,
+                                                    fixed_parameters,
+                                                    utility_functions)
+my_nl_time = time.clock() - start
 
 start = time.clock()
 my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C,
-                                                          initial_parameters,  # [:5],
+                                                          initial_parameters[:5],
                                                           parameter_indices,
                                                           fixed_parameters,
                                                           variable_indices)
 my_mnl_time = time.clock() - start
 
 LogitEstimationRunner.print_run_results('MNL', my_mnl.thetas, my_mnl.cost, my_mnl_time)
-# LogitEstimationRunner.print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)
+LogitEstimationRunner.print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)
