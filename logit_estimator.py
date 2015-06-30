@@ -45,13 +45,9 @@ class ModelEstimator(object):
                                          gradient_function,
                                          theta)
 
-        if abs(grad_check) > 2 * 10**-5:  # 1 * 10**-6:
+        if abs(grad_check) > 1 * 10**-5:  # 1 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
-
-    # @staticmethod
-    # def get_parameters():
-    #     raise NotImplementedError("Don't instantiate the Base Class")
 
     def cost_function(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
@@ -106,7 +102,7 @@ class NestedLogitEstimator(ModelEstimator):
         l - nest, [1, ..., h]
         """
 
-        # TODO: Get the MNL estimator running, for comparison purposes!
+        # TODO: Get NL to match MNL!
 
         nest_sums = np.zeros((self.m, self.h))
         v = np.zeros((self.m, self.k))
@@ -116,11 +112,6 @@ class NestedLogitEstimator(ModelEstimator):
                     v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
                     v[i, self.alts[l][j]] = v_ilj
                     v_scaled = v_ilj / parameters[self.lambda_map[l]]
-                    if v_scaled > 200.0 or v_scaled < -200.0:
-                        # We are getting very small lambda values sometimes.
-                        # np.exp(x), where x > 709, causes an overflow
-                        print('%0.6f - %s - %0.6f' %
-                              (v_ilj, str(parameters[-2:]), v_scaled))
                     nest_sums[i, l] += np.exp(v_scaled)
 
         p = np.zeros(self.m)
@@ -140,9 +131,6 @@ class NestedLogitEstimator(ModelEstimator):
     def gradient_function(self, parameters):
         """Serious numerical gradient stuff"""
         self.iteration += 1
-        # self.lambdas = theta_f[-1 * self.h:]
-        # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
-
         base_cost = self.cost_function(parameters)
 
         gradient = np.zeros_like(parameters)
@@ -210,7 +198,7 @@ class MultinomialLogitEstimator(ModelEstimator):
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[j]],
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]],
                                                  parameters[self.parameter_indices[l]]))
                 cost += self.y[i, j] * np.log(numerator / denominator)
 
@@ -231,19 +219,15 @@ class MultinomialLogitEstimator(ModelEstimator):
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[l]]))
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]], parameters[self.parameter_indices[l]]))
 
                 # gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
                 gradient[self.parameter_indices[j]] += self.x[i, self.variable_indices[j]] * (self.y[i, j] - numerator / denominator)
 
-        print((str(self.iteration) + ' - ' +
-               str(parameters[0]) + ' - ' +
-               str(self.y[i]) + ' - ' +
-               str(gradient)))
-
         # penalty_gradient = (1 / self.c) * theta
         penalty_gradient = (1 / self.c) * parameters
         gradient = (-1 * gradient + penalty_gradient) / self.m
+        # return np.ravel(gradient)
         return np.ravel(gradient)
 
     def get_results(self, parameters):
