@@ -78,7 +78,7 @@ class LogitEstimationRunner:
         # init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
 
         # print('initial MNL results - cost: %.6f' % init_mnl_cost)
-        print('initial NL results  - cost: %.6f' % init_nl_cost)
+        print('initial NL results - cost: %.6f' % init_nl_cost)
 
         nl_results = lr_nl.estimate()
         return nl_results
