@@ -102,6 +102,7 @@ class NestedLogitEstimator(ModelEstimator):
         l - nest, [1, ..., h]
         """
 
+        # TODO: NL fails the gradient check when the nest with multiple alternatives is fixed
         # TODO: Get NL to match MNL!
 
         nest_sums = np.zeros((self.m, self.h))
@@ -136,10 +137,10 @@ class NestedLogitEstimator(ModelEstimator):
         gradient = np.zeros_like(parameters)
         for p in range(0, len(parameters)):
             if p in self.fixed_parameters:
-                gradient[p] = 0.0
+                gradient[p] = 0
             else:
                 theta_p = parameters[p]
-                step_size = self.sqrt_eps  # * 2.0
+                step_size = self.sqrt_eps
                 theta_p_step = theta_p + step_size
                 d_theta_p = theta_p_step - theta_p  # This doesn't work...
                 theta_f_step = np.copy(parameters)
@@ -219,10 +220,12 @@ class MultinomialLogitEstimator(ModelEstimator):
                 denominator = 0
                 for l in range(0, self.k):
                     # denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]], parameters[self.parameter_indices[l]]))
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]],
+                                                 parameters[self.parameter_indices[l]]))
 
                 # gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
-                gradient[self.parameter_indices[j]] += self.x[i, self.variable_indices[j]] * (self.y[i, j] - numerator / denominator)
+                gradient[self.parameter_indices[j]] += (self.x[i, self.variable_indices[j]] *
+                                                        (self.y[i, j] - numerator / denominator))
 
         # penalty_gradient = (1 / self.c) * theta
         penalty_gradient = (1 / self.c) * parameters
