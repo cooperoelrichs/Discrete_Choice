@@ -50,11 +50,11 @@ initial_parameters = np.array([
     np.random.rand(),
     np.random.rand(),
     np.random.rand(),
-    1.0,
-    1.0,
+    1,
+    1,
 ])
 
-fixed_parameters = set([5, 6])  # Set of parameter numbers
+fixed_parameters = {5, 6}  # Set of parameter numbers
 
 parameter_indices = [[0, 3, 4], [1, 3, 4], [2, 3, 4]]
 variable_indices = [[0, 1, 2], [0, 3, 4], [0, 5, 6]]
