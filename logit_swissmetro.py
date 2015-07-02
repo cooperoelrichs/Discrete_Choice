@@ -74,12 +74,13 @@ start = time.clock()
 my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts,
                                                     initial_parameters,
                                                     fixed_parameters,
-                                                    utility_functions)
+                                                    utility_functions,
+                                                    parameter_indices, variable_indices)
 my_nl_time = time.clock() - start
 
 start = time.clock()
 my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C,
-                                                          initial_parameters[:5],
+                                                          initial_parameters[:-2],
                                                           parameter_indices,
                                                           fixed_parameters,
                                                           variable_indices)

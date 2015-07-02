@@ -66,21 +66,36 @@ class LogitEstimationRunner:
         return results
 
     @staticmethod
-    def estimate_nested_model(x, y, c, alts, initial_parameters, fixed_parameters, utility_functions):
+    def estimate_nested_model(x, y, c, alts, initial_parameters, fixed_parameters, utility_functions, parameter_indices, variable_indices):
         lr_nl = NestedLogitEstimator(x, y, c, alts=alts,
                                      initial_parameters=initial_parameters,
                                      fixed_parameters=fixed_parameters,
                                      utility_functions=utility_functions)
-        # init_nl_cost = lr_nl.cost_function(lr_nl.theta_f, lr_nl.X, lr_nl.y)
-        nl_parameters = lr_nl.initial_parameters
-        init_nl_cost = lr_nl.cost_function(nl_parameters)
-        # lr_mnl = MultinomialLogitEstimator(x, y, 999999999, [])
-        # init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
 
-        # print('initial MNL results - cost: %.6f' % init_mnl_cost)
-        print('initial NL results - cost: %.6f' % init_nl_cost)
+        lr_mnl = MultinomialLogitEstimator(x, y, c,
+                                           initial_parameters=initial_parameters,
+                                           parameter_indices=parameter_indices,
+                                           fixed_parameters=fixed_parameters,
+                                           variable_indices=variable_indices)
 
         nl_results = lr_nl.estimate()
+
+        initial_nl_parameters = lr_nl.initial_parameters
+        initial_nl_cost = lr_nl.cost_function(initial_nl_parameters)
+        initial_mnl_cost = lr_mnl.cost_function(initial_nl_parameters[:-2])
+
+        print('initial MNL results - cost: %.6f' % initial_mnl_cost)
+        print('initial NL results - cost: %.6f' % initial_nl_cost)
+
+        final_nl_parameters = nl_results.parameters
+        final_nl_cost = lr_nl.cost_function(final_nl_parameters)
+        final_mnl_cost = lr_mnl.cost_function(final_nl_parameters[:-2])
+
+        print('final MNL results - cost: %.6f' % final_nl_cost)
+        print('final NL results - cost: %.6f' % final_mnl_cost)
+
+        exit()
+
         return nl_results
 
     # @staticmethod

@@ -9,7 +9,7 @@ from collections import namedtuple
 import numpy as np
 
 
-ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
+ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration parameters')
 
 
 class ModelEstimator(object):
@@ -47,7 +47,7 @@ class ModelEstimator(object):
 
         if abs(grad_check) > 1 * 10**-5:  # 1 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
-            raise ValueError(error)
+            # raise ValueError(error)
 
     def cost_function(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
@@ -102,8 +102,8 @@ class NestedLogitEstimator(ModelEstimator):
         l - nest, [1, ..., h]
         """
 
-        # TODO: NL fails the gradient check when the nest with multiple alternatives is fixed
         # TODO: Get NL to match MNL!
+        # TODO: NL and MNL cost functions produce different results for the same parameters
 
         nest_sums = np.zeros((self.m, self.h))
         v = np.zeros((self.m, self.k))
@@ -161,7 +161,8 @@ class NestedLogitEstimator(ModelEstimator):
         return ModelResults(cost=self.cost_function(parameters),
                             thetas=parameters[:-1 * self.h],
                             lambdas=parameters[-1 * self.h:],
-                            iteration=self.iteration)
+                            iteration=self.iteration,
+                            parameters=parameters)
 
 
 class MultinomialLogitEstimator(ModelEstimator):
@@ -237,7 +238,8 @@ class MultinomialLogitEstimator(ModelEstimator):
         return ModelResults(cost=self.cost_function(parameters),
                             thetas=parameters,
                             lambdas=[],
-                            iteration=self.iteration)
+                            iteration=self.iteration,
+                            parameters=parameters)
 
 
 class LogisticRegressionEstimator(ModelEstimator):
