@@ -22,6 +22,17 @@ class LogitEstimationRunner:
         print(' - cost: %.6f' % cost)
         print(' - run time: %.6f' % run_time)
 
+    def print_data_statistics(X, y):
+        print('Sample size: %i' % len(X))
+        LogitEstimationRunner.print_alternative_availability(X, y, 0)
+        LogitEstimationRunner.print_alternative_availability(X, y, 1)
+        LogitEstimationRunner.print_alternative_availability(X, y, 2)
+
+    @staticmethod
+    def print_alternative_availability(X, y, i):
+        # print('Alt. %i available %i' % (i, X[...]))
+        print('Alt. %i chosen %i' % (i, len(y[y == i])))
+
     @staticmethod
     def estimate_scikit_learn_model(x, y, c):
         """Estimate a scikit-learn multinomial logit model"""
