@@ -70,6 +70,10 @@ class NestedLogitEstimator(ModelEstimator):
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
     """
 
+    # TODO: Compare NL to Biogeme
+    # TODO: Multi level NL
+    # TODO: Regularised NL
+
     def __init__(self, x, y, c, alts, initial_parameters, fixed_parameters, utility_functions):
         super(NestedLogitEstimator, self).__init__(x, y, c)
 
@@ -101,9 +105,6 @@ class NestedLogitEstimator(ModelEstimator):
         i - current experiment, [1, ..., m]
         l - nest, [1, ..., h]
         """
-
-        # TODO: Get NL to match MNL!
-        # TODO: NL and MNL cost functions produce different results for the same parameters
 
         nest_sums = np.zeros((self.m, self.h))
         v = np.zeros((self.m, self.k))
