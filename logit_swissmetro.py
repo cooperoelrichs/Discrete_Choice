@@ -16,16 +16,21 @@ import numpy as np
 file_name = 'biogeme_files/swissmetro.dat'
 data = genfromtxt(file_name, delimiter='\t', skip_header=1)
 headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
+
+# TODO: Generate an equivalent data set to Biogeme
+
 data = data[data[:, -1] != 0]  # choice != 0
-data = data[data[:, 15] != 0]  # car_av
-data = data[data[:, 16] != 0]  # train_av
-data = data[data[:, 2] != 0]  # sp
+# data = data[data[:, 15] != 0]  # car_av
+# data = data[data[:, 16] != 0]  # train_av
+# data = data[data[:, 2] != 0]  # sp
+data = data[(data[:, 4] != 1) & (data[:, 4] != 3)]  # purpose
 
 columns = [18, 19, 21, 22, 25, 26]
 y = data[:, -1] - 1
 X = data[:, columns]
 X /= 100  # scale the costs and travel times
 
+print(headers[[-1, 15, 16, 2, 4]])
 print(headers[columns])
 print(unique(y))
 print(X[:4])
@@ -69,6 +74,9 @@ def u3(x_i, parameters):
     return np.dot(x_i[[0, 5, 6]], parameters[[2, 3, 4]])
 
 utility_functions = [u1, u2, u3]
+
+LogitEstimationRunner.print_data_statistics(X_scaled, y)
+
 
 start = time.clock()
 my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts,
