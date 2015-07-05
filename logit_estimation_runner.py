@@ -72,29 +72,29 @@ class LogitEstimationRunner:
                                      fixed_parameters=fixed_parameters,
                                      utility_functions=utility_functions)
 
-        lr_mnl = MultinomialLogitEstimator(x, y, c,
-                                           initial_parameters=initial_parameters,
-                                           parameter_indices=parameter_indices,
-                                           fixed_parameters=fixed_parameters,
-                                           variable_indices=variable_indices)
+        # lr_mnl = MultinomialLogitEstimator(x, y, c,
+        #                                    initial_parameters=initial_parameters,
+        #                                    parameter_indices=parameter_indices,
+        #                                    fixed_parameters=fixed_parameters,
+        #                                    variable_indices=variable_indices)
 
         nl_results = lr_nl.estimate()
 
-        initial_nl_parameters = lr_nl.initial_parameters
-        initial_nl_cost = lr_nl.cost_function(initial_nl_parameters)
-        initial_mnl_cost = lr_mnl.cost_function(initial_nl_parameters[:-2])
-
-        print('initial MNL results - cost: %.6f' % initial_mnl_cost)
-        print('initial NL results - cost: %.6f' % initial_nl_cost)
-
-        final_nl_parameters = nl_results.parameters
-        final_nl_cost = lr_nl.cost_function(final_nl_parameters)
-        final_mnl_cost = lr_mnl.cost_function(final_nl_parameters[:-2])
-
-        print('final MNL results - cost: %.6f' % final_nl_cost)
-        print('final NL results - cost: %.6f' % final_mnl_cost)
-
-        exit()
+        # initial_nl_parameters = lr_nl.initial_parameters
+        # initial_nl_cost = lr_nl.cost_function(initial_nl_parameters)
+        # initial_mnl_cost = lr_mnl.cost_function(initial_nl_parameters[:-2])
+        #
+        # print('initial MNL results - cost: %.6f' % initial_mnl_cost)
+        # print('initial NL results - cost: %.6f' % initial_nl_cost)
+        #
+        # final_nl_parameters = nl_results.parameters
+        # final_nl_cost = lr_nl.cost_function(final_nl_parameters)
+        # final_mnl_cost = lr_mnl.cost_function(final_nl_parameters[:-2])
+        #
+        # print('final MNL results - cost: %.6f' % final_nl_cost)
+        # print('final NL results - cost: %.6f' % final_mnl_cost)
+        #
+        # exit()
 
         return nl_results
 

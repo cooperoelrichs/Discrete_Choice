@@ -30,7 +30,7 @@ print(headers[columns])
 print(unique(y))
 print(X[:4])
 
-C = 0.01
+C = 999999  # 0.01
 alts = [[0, 2], [1]]
 
 scaler = LogitEstimationRunner.scaler(X)
@@ -54,7 +54,7 @@ initial_parameters = np.array([
     1,
 ])
 
-fixed_parameters = {5, 6}  # Set of parameter numbers
+fixed_parameters = {6}  # Set of parameter numbers
 
 parameter_indices = [[0, 3, 4], [1, 3, 4], [2, 3, 4]]
 variable_indices = [[0, 1, 2], [0, 3, 4], [0, 5, 6]]
