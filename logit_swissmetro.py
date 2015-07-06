@@ -23,7 +23,7 @@ data = data[data[:, -1] != 0]  # choice != 0
 # data = data[data[:, 15] != 0]  # car_av
 # data = data[data[:, 16] != 0]  # train_av
 # data = data[data[:, 2] != 0]  # sp
-data = data[(data[:, 4] != 1) & (data[:, 4] != 3)]  # purpose
+data = data[(data[:, 4] == 1) | (data[:, 4] == 3)]  # purpose == 1 or purpose == 3
 
 columns = [18, 19, 21, 22, 25, 26]
 y = data[:, -1] - 1
@@ -38,8 +38,8 @@ print(X[:4])
 C = 999999  # 0.01
 alts = [[0, 2], [1]]
 
-scaler = LogitEstimationRunner.scaler(X)
-X_scaled = scaler.transform(X)
+# scaler = LogitEstimationRunner.scaler(X)
+# X_scaled = scaler.transform(X)
 
 # Experimental utility function specification
 # ASC_CAR = Beta('ASC_CAR',-0.167,-10,10,0)
@@ -54,32 +54,32 @@ initial_parameters = np.array([
     np.random.rand(),
     np.random.rand(),
     np.random.rand(),
-    np.random.rand(),
+    # np.random.rand(),
     1,
     1,
 ])
 
-fixed_parameters = {6}  # Set of parameter numbers
+fixed_parameters = {5}  # Set of parameter numbers
 
-parameter_indices = [[0, 3, 4], [1, 3, 4], [2, 3, 4]]
-variable_indices = [[0, 1, 2], [0, 3, 4], [0, 5, 6]]
+parameter_indices = [[0, 2, 3], [1, 2, 3], [2, 3]]
+variable_indices = [[0, 1, 2], [0, 3, 4], [5, 6]]
 
 def u1(x_i, parameters):
-    return np.dot(x_i[[0, 1, 2]], parameters[[0, 3, 4]])
+    return np.dot(x_i[[0, 1, 2]], parameters[[0, 2, 3]])
 
 def u2(x_i, parameters):
-    return np.dot(x_i[[0, 3, 4]], parameters[[1, 3, 4]])
+    return np.dot(x_i[[0, 3, 4]], parameters[[1, 2, 3]])
 
 def u3(x_i, parameters):
-    return np.dot(x_i[[0, 5, 6]], parameters[[2, 3, 4]])
+    return np.dot(x_i[[5, 6]], parameters[[2, 3]])
 
 utility_functions = [u1, u2, u3]
 
-LogitEstimationRunner.print_data_statistics(X_scaled, y)
+LogitEstimationRunner.print_data_statistics(X, y)
 
 
 start = time.clock()
-my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts,
+my_nl = LogitEstimationRunner.estimate_nested_model(X, y, C, alts,
                                                     initial_parameters,
                                                     fixed_parameters,
                                                     utility_functions,
@@ -87,7 +87,7 @@ my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts,
 my_nl_time = time.clock() - start
 
 start = time.clock()
-my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C,
+my_mnl = LogitEstimationRunner.estimate_multinomial_model(X, y, C,
                                                           initial_parameters[:-2],
                                                           parameter_indices,
                                                           fixed_parameters,
