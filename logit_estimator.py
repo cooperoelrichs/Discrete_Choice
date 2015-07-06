@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelBinarizer
 from scipy import optimize
 from collections import namedtuple
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration parameters')
@@ -33,7 +34,7 @@ class ModelEstimator(object):
         self.gradient_check(self.cost_function, self.gradient_function, parameters)
         parameters = optimize.fmin_bfgs(self.cost_function, parameters,
                                         fprime=self.gradient_function,
-                                        gtol=0.001, disp=False)
+                                        gtol=0.0001, disp=False)
 
         self.gradient_check(self.cost_function, self.gradient_function, parameters)
         return self.get_results(parameters)
@@ -47,7 +48,7 @@ class ModelEstimator(object):
 
         if abs(grad_check) > 1 * 10**-5:  # 1 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
-            # raise ValueError(error)
+            raise ValueError(error)
 
     def cost_function(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
@@ -81,7 +82,7 @@ class NestedLogitEstimator(ModelEstimator):
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
         self.h = len(self.alts)
         self.nest_lens = [len(x) for x in self.alts]
-        self.lambda_map = [5, 6]
+        self.lambda_map = [4, 5]
 
         for i, x in enumerate(self.alts):
             for j in x:
@@ -90,6 +91,10 @@ class NestedLogitEstimator(ModelEstimator):
         self.initial_parameters = initial_parameters
         self.fixed_parameters = fixed_parameters
         self.utility_functions = utility_functions
+
+        # plt.interactive(False)
+        self.plot, = plt.plot([], [])
+        plt.show(block=False)
 
     def cost_function(self, parameters):
         """
@@ -114,6 +119,8 @@ class NestedLogitEstimator(ModelEstimator):
                     v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
                     v[i, self.alts[l][j]] = v_ilj
                     v_scaled = v_ilj / parameters[self.lambda_map[l]]
+                    if abs(v_scaled) > 100:
+                        print('%0.2f ~ %0.2f ~ %0.3f' % (v_scaled, v_ilj, parameters[self.lambda_map[l]]))
                     nest_sums[i, l] += np.exp(v_scaled)
 
         p = np.zeros(self.m)
@@ -149,13 +156,12 @@ class NestedLogitEstimator(ModelEstimator):
                 step_cost = self.cost_function(theta_f_step)
                 gradient[p] = ((step_cost - base_cost) / d_theta_p)
 
-                if p == 0:
-                    print((str(self.iteration) + ' - ' +
-                           str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
-                           str(base_cost) + ' - ' +
-                           str(step_cost) + ' - ' +
-                           str(gradient[p])))
+                # if p == 0:
+                #     print('%i ~ %0.4f ~ %0.4f ~ %0.4f ~ %0.4f ~ %0.4f'
+                #           % (self.iteration, theta_p, theta_p_step, base_cost, step_cost, gradient[p]))
 
+        print('%i ~ ' % self.iteration + '%0.4f, ' * len(parameters) % tuple(parameters))
+        self.update_plot(self.iteration, base_cost)
         return gradient
 
     def get_results(self, parameters):
@@ -165,6 +171,13 @@ class NestedLogitEstimator(ModelEstimator):
                             iteration=self.iteration,
                             parameters=parameters)
 
+    def update_plot(self, x, y):
+        self.plot.set_xdata(np.append(self.plot.get_xdata(), x))
+        self.plot.set_ydata(np.append(self.plot.get_ydata(), y))
+        self.plot.axes.relim()
+        self.plot.axes.autoscale_view()
+        plt.draw()
+        # plt.show(block=False)
 
 class MultinomialLogitEstimator(ModelEstimator):
     """
