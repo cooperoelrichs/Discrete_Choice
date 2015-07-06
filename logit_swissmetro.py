@@ -17,7 +17,7 @@ file_name = 'biogeme_files/swissmetro.dat'
 data = genfromtxt(file_name, delimiter='\t', skip_header=1)
 headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
 
-# TODO: Generate an equivalent data set to Biogeme
+# TODO: Add availability conditions
 
 data = data[data[:, -1] != 0]  # choice != 0
 # data = data[data[:, 15] != 0]  # car_av

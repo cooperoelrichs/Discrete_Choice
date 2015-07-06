@@ -71,6 +71,7 @@ class NestedLogitEstimator(ModelEstimator):
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
     """
 
+    # TODO: Add support for availability conditions
     # TODO: Compare NL to Biogeme
     # TODO: Multi level NL
     # TODO: Regularised NL
