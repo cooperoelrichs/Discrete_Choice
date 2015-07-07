@@ -8,6 +8,7 @@ from scipy import optimize
 from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration parameters')
@@ -166,6 +167,7 @@ class NestedLogitEstimator(ModelEstimator):
         return gradient
 
     def get_results(self, parameters):
+        plt.savefig(os.path.join(os.path.dirname(__file__), 'images/objective.png'), bbox_inches='tight')
         return ModelResults(cost=self.cost_function(parameters),
                             thetas=parameters[:-1 * self.h],
                             lambdas=parameters[-1 * self.h:],
