@@ -75,14 +75,17 @@ class NestedLogitEstimator(ModelEstimator):
         3. http://en.wikipedia.org/wiki/Maximum_likelihood
     """
 
-    def __init__(self, x, y, c, alts, initial_parameters, fixed_parameters, utility_functions):
+    def __init__(self, x, y, c, alts, av, weights, initial_parameters, fixed_parameters, utility_functions,
+                 lambda_params):
         super(NestedLogitEstimator, self).__init__(x, y, c)
 
         self.alts = np.array(alts)
+        self.av = av
+        self.weights = weights
         self.nest_index = np.zeros_like(self.y[0])  # = [0, 0, 1, 1]
-        self.h = len(self.alts)
+        self.h = len(self.alts)  # number of nests
         self.nest_lens = [len(x) for x in self.alts]
-        self.lambda_map = [5, 6]
+        self.lambda_params = lambda_params
 
         for i, x in enumerate(self.alts):
             for j in x:
@@ -109,33 +112,38 @@ class NestedLogitEstimator(ModelEstimator):
 
         # TODO: Get the MNL estimator running, for comparison purposes!
 
-        nest_sums = np.zeros((self.m, self.h))
-        v = np.zeros((self.m, self.k))
+        # np.seterr(all='ignore')
+
+        nest_sums = np.zeros((self.m, self.h), dtype=np.longdouble)
+        v_scaled = np.zeros((self.m, self.k), dtype=np.longdouble)
         for i in range(0, self.m):
             for l in range(0, self.h):
                 for j in range(0, self.nest_lens[l]):
-                    v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
-                    v[i, self.alts[l][j]] = v_ilj
-                    v_scaled = v_ilj / parameters[self.lambda_map[l]]
-                    if v_scaled > 200.0 or v_scaled < -200.0:
-                        # We are getting very small lambda values sometimes.
-                        # np.exp(x), where x > 709, causes an overflow
-                        print('%0.6f - %s - %0.6f' %
-                              (v_ilj, str(parameters[-2:]), v_scaled))
-                    nest_sums[i, l] += np.exp(v_scaled)
+                    if self.av[i, self.alts[l][j]] == 1:
+                        v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
+                        v_scaled[i, self.alts[l][j]] = v_ilj / parameters[self.lambda_params[l]]
+                        # if v_scaled[i, self.alts[l][j]] > 700.0 or v_scaled[i, self.alts[l][j]] < -700.0:
+                        #     print('%0.0f - %0.0f - %0.6f' %
+                        #           (v_ilj, v_scaled[i, self.alts[l][j]], np.exp(v_scaled[i, self.alts[l][j]])))
+                        nest_sums[i, l] += np.exp(v_scaled[i, self.alts[l][j]])
 
         p = np.zeros(self.m)
         for i in range(0, self.m):
             j = self.y_index[i]
             l = self.nest_index[j]
-            num = (np.exp(v[i, j] / parameters[self.lambda_map[l]]) *
-                   (nest_sums[i, l] ** (parameters[self.lambda_map[l]] - 1.0)))
+            if self.av[i, j] == 0:
+                raise RuntimeError('Chosen is unavailable')
+            num = (np.exp(v_scaled[i, j]) *
+                   (nest_sums[i, l] ** (parameters[self.lambda_params[l]] - 1.0)))
             dom = 0
             for l_2 in range(0, self.h):
-                dom += nest_sums[i, l_2] ** parameters[self.lambda_map[l_2]]
+                dom += nest_sums[i, l_2] ** parameters[self.lambda_params[l_2]]
             p[i] = num / dom
 
-        cost = - np.sum(np.log(p)) / self.m
+            # print([i, p[i], num, dom])  # , self.x[i]])
+            # if i == 100: exit()
+
+        cost = - np.dot(np.log(p), np.transpose(self.weights))  # / self.m
         return cost
 
     def gradient_function(self, parameters):

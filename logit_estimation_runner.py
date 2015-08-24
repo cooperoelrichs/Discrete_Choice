@@ -66,6 +66,25 @@ class LogitEstimationRunner:
         nl_results = lr_nl.estimate()
         return nl_results
 
+    def calculate_nl_cost(x, y, c, alts, av, weights, initial_parameters, fixed_parameters, utility_functions,
+                          lambda_params):
+        lr_nl = NestedLogitEstimator(x, y, c, alts=alts,
+                                     av=av,
+                                     weights=weights,
+                                     initial_parameters=initial_parameters,
+                                     fixed_parameters=fixed_parameters,
+                                     utility_functions=utility_functions,
+                                     lambda_params=lambda_params)
+
+        nl_parameters = lr_nl.initial_parameters
+        init_nl_cost = lr_nl.cost_function(nl_parameters)
+
+        # lr_mnl = MultinomialLogitEstimator(x, y, 999999999)
+        # init_mnl_cost = lr_mnl.cost_function(nl_parameters[:-2])
+
+        # print('initial MNL results - cost: %.6f' % init_mnl_cost)
+        return init_nl_cost
+
     # @staticmethod
     # def _estimate_nested_model(x, y, c):
     #     x = np.array([[1, 2], [0, 0]])
