@@ -79,13 +79,13 @@ def u3(x_i, params):
 utility_functions = [u1, u2, u3]
 
 start = time.clock()
-# my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts, initial_parameters,
-#                                                     fixed_parameters, utility_functions)
+my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts, initial_parameters,
+                                                    fixed_parameters, utility_functions)
 my_nl_time = time.clock() - start
 
-start = time.clock()
-my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C)
-my_mnl_time = time.clock() - start
+# start = time.clock()
+# my_mnl = LogitEstimationRunner.estimate_multinomial_model(X_scaled, y, C)
+# my_mnl_time = time.clock() - start
 
-print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
-# print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)
+# print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
+print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)
