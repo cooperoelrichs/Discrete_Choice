@@ -21,14 +21,24 @@ headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
 
 data = data[data[:, -1] != 0]  # choice != 0
 # data = data[data[:, 15] != 0]  # car_av
+# data[data[:, 16] == 0][0, 22] = 999.0
+print(data[data[:, 16] == 0][0, 22])
+print(data[data[:, 16] == 0][:, 22])
+# data[data[:, 16] == 0][:, 25] += 99999999  # car_av
+# data[data[:, 16] == 0][:, 26] += 99999999  # car_av
 # data = data[data[:, 16] != 0]  # train_av
-# data = data[data[:, 2] != 0]  # sp
+# data[data[:, 15] == 0][:, 18] += 99999999  # train_av
+# data[data[:, 15] == 0][:, 19] += 99999999  # train_av
+
+data = data[data[:, 2] != 0]  # sp
 data = data[(data[:, 4] == 1) | (data[:, 4] == 3)]  # purpose == 1 or purpose == 3
 
-columns = [18, 19, 21, 22, 25, 26]
+columns = [18, 19, 21, 22, 25, 26]   # ['TRAIN_TT' 'TRAIN_CO' 'SM_TT' 'SM_CO' 'CAR_TT' 'CAR_CO']
 y = data[:, -1] - 1
 X = data[:, columns]
 X /= 100  # scale the costs and travel times
+
+print(X[:11])
 
 print(headers[[-1, 15, 16, 2, 4]])
 print(headers[columns])
@@ -37,6 +47,7 @@ print(X[:4])
 
 C = 999999  # 0.01
 alts = [[0, 2], [1]]
+availability = []
 
 # scaler = LogitEstimationRunner.scaler(X)
 # X_scaled = scaler.transform(X)
