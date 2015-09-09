@@ -122,18 +122,15 @@ class NestedLogitEstimator(ModelEstimator):
                     if self.av[i, self.alts[l][j]] == 1:
                         v_ilj = self.utility_functions[self.alts[l][j]](self.x[i], parameters)
                         v_scaled[i, self.alts[l][j]] = v_ilj / parameters[self.lambda_params[l]]
-                        # if v_scaled[i, self.alts[l][j]] > 700.0 or v_scaled[i, self.alts[l][j]] < -700.0:
-                        #     print('%0.0f - %0.0f - %0.6f' %
-                        #           (v_ilj, v_scaled[i, self.alts[l][j]], np.exp(v_scaled[i, self.alts[l][j]])))
                         nest_sums[i, l] += np.exp(v_scaled[i, self.alts[l][j]])
 
         p = np.zeros(self.m)
         for i in range(0, self.m):
-            j = self.y_index[i]
-            l = self.nest_index[j]
-            if self.av[i, j] == 0:
+            y = self.y_index[i]
+            l = self.nest_index[y]
+            if self.av[i, y] == 0:
                 raise RuntimeError('Chosen is unavailable')
-            num = (np.exp(v_scaled[i, j]) *
+            num = (np.exp(v_scaled[i, y]) *
                    (nest_sums[i, l] ** (parameters[self.lambda_params[l]] - 1.0)))
             dom = 0
             for l_2 in range(0, self.h):
@@ -174,7 +171,6 @@ class NestedLogitEstimator(ModelEstimator):
                            str(base_cost) + ' - ' +
                            str(step_cost) + ' - ' +
                            str(gradient[p])))
-
         return gradient
 
 
