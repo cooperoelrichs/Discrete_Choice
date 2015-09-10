@@ -5,15 +5,6 @@ from numpy import genfromtxt
 from numpy import unique
 import numpy as np
 
-
-def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):
-    print('%s results' % model_name)
-    print(' - coefficients:')
-    print(coefs)
-    print(' - lambdas: ' + str(lambdas))
-    print(' - cost: %.6f' % cost)
-    print(' - run time: %.6f' % run_time)
-
 # X, y = datasets.make_classification(n_samples=1000,
 #                                     n_features=10,
 #                                     n_informative=8,
@@ -25,27 +16,41 @@ def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):
 file_name = 'biogeme_files/swissmetro.dat'
 data = genfromtxt(file_name, delimiter='\t', skip_header=1)
 headers = np.array(open(file_name, 'r').readline().rstrip().split('\t'))
-data = data[data[:, -1] != 0]  # choice != 0
-data = data[data[:, 15] != 0]  # car_av
-data = data[data[:, 16] != 0]  # train_av
-data = data[data[:, 2] != 0]  # sp
 
-columns = [18, 19, 21, 22, 25, 26]
+# TODO: Add availability conditions
+
+data = data[data[:, -1] != 0]  # choice != 0
+# data = data[data[:, 15] != 0]  # car_av
+# data[data[:, 16] == 0][0, 22] = 999.0
+print(data[data[:, 16] == 0][0, 22])
+print(data[data[:, 16] == 0][:, 22])
+# data[data[:, 16] == 0][:, 25] += 99999999  # car_av
+# data[data[:, 16] == 0][:, 26] += 99999999  # car_av
+# data = data[data[:, 16] != 0]  # train_av
+# data[data[:, 15] == 0][:, 18] += 99999999  # train_av
+# data[data[:, 15] == 0][:, 19] += 99999999  # train_av
+
+data = data[data[:, 2] != 0]  # sp
+data = data[(data[:, 4] == 1) | (data[:, 4] == 3)]  # purpose == 1 or purpose == 3
+
+columns = [18, 19, 21, 22, 25, 26]   # ['TRAIN_TT' 'TRAIN_CO' 'SM_TT' 'SM_CO' 'CAR_TT' 'CAR_CO']
 y = data[:, -1] - 1
 X = data[:, columns]
 X /= 100  # scale the costs and travel times
-#          [4, 5, 6, 7, 8, 9, 10, 11, 12,
-#           15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]]
 
+print(X[:11])
+
+print(headers[[-1, 15, 16, 2, 4]])
 print(headers[columns])
 print(unique(y))
 print(X[:4])
 
-C = 0.01
+C = 999999  # 0.01
 alts = [[0, 2], [1]]
+availability = []
 
-scaler = LogitEstimationRunner.scaler(X)
-X_scaled = scaler.transform(X)
+# scaler = LogitEstimationRunner.scaler(X)
+# X_scaled = scaler.transform(X)
 
 # Experimental utility function specification
 # ASC_CAR = Beta('ASC_CAR',-0.167,-10,10,0)
@@ -60,23 +65,29 @@ initial_parameters = np.array([
     np.random.rand(),
     np.random.rand(),
     np.random.rand(),
-    np.random.rand(),
-    1.0,
-    1.0,
+    # np.random.rand(),
+    1,
+    1,
 ])
 
-fixed_parameters = set([6])  # Set of parameter numbers
+fixed_parameters = {5}  # Set of parameter numbers
 
-def u1(x_i, params):
-    return np.dot(x_i[[0, 1, 2]], params[[0, 3, 4]])
+parameter_indices = [[0, 2, 3], [1, 2, 3], [2, 3]]
+variable_indices = [[0, 1, 2], [0, 3, 4], [5, 6]]
 
-def u2(x_i, params):
-    return np.dot(x_i[[0, 3, 4]], params[[1, 3, 4]])
+def u1(x_i, parameters):
+    return np.dot(x_i[[0, 1, 2]], parameters[[0, 2, 3]])
 
-def u3(x_i, params):
-    return np.dot(x_i[[0, 5, 6]], params[[2, 3, 4]])
+def u2(x_i, parameters):
+    return np.dot(x_i[[0, 3, 4]], parameters[[1, 2, 3]])
+
+def u3(x_i, parameters):
+    return np.dot(x_i[[5, 6]], parameters[[2, 3]])
 
 utility_functions = [u1, u2, u3]
+
+LogitEstimationRunner.print_data_statistics(X, y)
+
 
 start = time.clock()
 my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts, initial_parameters,
@@ -89,3 +100,4 @@ my_nl_time = time.clock() - start
 
 # print_run_results('MNL', my_mnl.theta, my_mnl.cost, my_mnl_time)
 print_run_results('NL', my_nl.thetas, my_nl.cost, my_nl_time, my_nl.lambdas)
+

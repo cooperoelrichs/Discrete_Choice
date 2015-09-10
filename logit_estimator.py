@@ -7,9 +7,11 @@ from sklearn.preprocessing import LabelBinarizer
 from scipy import optimize
 from collections import namedtuple
 import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 
-ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration')
+ModelResults = namedtuple('ModelResults', 'cost thetas lambdas iteration parameters')
 
 
 class ModelEstimator(object):
@@ -33,14 +35,10 @@ class ModelEstimator(object):
         self.gradient_check(self.cost_function, self.gradient_function, parameters)
         parameters = optimize.fmin_bfgs(self.cost_function, parameters,
                                         fprime=self.gradient_function,
-                                        gtol=0.001, disp=False)
+                                        gtol=0.0001, disp=False)
 
         self.gradient_check(self.cost_function, self.gradient_function, parameters)
-        results = ModelResults(cost=self.cost_function(parameters),
-                               thetas=parameters[:-1 * self.h],
-                               lambdas=parameters[-1 * self.h:],
-                               iteration=self.iteration)
-        return results
+        return self.get_results(parameters)
 
     @staticmethod
     def gradient_check(cost_function, gradient_function,
@@ -49,18 +47,17 @@ class ModelEstimator(object):
                                          gradient_function,
                                          theta)
 
-        if abs(grad_check) > 6 * 10**-6:
+        if abs(grad_check) > 1 * 10**-5:  # 1 * 10**-6:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
-
-    # @staticmethod
-    # def get_parameters():
-    #     raise NotImplementedError("Don't instantiate the Base Class")
 
     def cost_function(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
 
     def gradient_function(self, parameters):
+        raise NotImplementedError("Don't instantiate the Base Class")
+
+    def get_results(self, parameters):
         raise NotImplementedError("Don't instantiate the Base Class")
 
 
@@ -77,6 +74,11 @@ class NestedLogitEstimator(ModelEstimator):
 
     def __init__(self, x, y, c, alts, av, weights, initial_parameters, fixed_parameters, utility_functions,
                  lambda_params):
+        # TODO: Add support for availability conditions
+        # TODO: Compare NL to Biogeme
+        # TODO: Multi level NL
+        # TODO: Regularised NL
+
         super(NestedLogitEstimator, self).__init__(x, y, c)
 
         self.alts = np.array(alts)
@@ -94,6 +96,10 @@ class NestedLogitEstimator(ModelEstimator):
         self.initial_parameters = initial_parameters
         self.fixed_parameters = fixed_parameters
         self.utility_functions = utility_functions
+
+        # plt.interactive(False)
+        self.plot, = plt.plot([], [])
+        plt.show(block=False)
 
     def cost_function(self, parameters):
         """
@@ -146,18 +152,15 @@ class NestedLogitEstimator(ModelEstimator):
     def gradient_function(self, parameters):
         """Serious numerical gradient stuff"""
         self.iteration += 1
-        # self.lambdas = theta_f[-1 * self.h:]
-        # self.theta = np.reshape(theta_f[:-1 * self.h], (self.k, self.n))
-
         base_cost = self.cost_function(parameters)
 
         gradient = np.zeros_like(parameters)
         for p in range(0, len(parameters)):
             if p in self.fixed_parameters:
-                gradient[p] = 0.0
+                gradient[p] = 0
             else:
                 theta_p = parameters[p]
-                step_size = self.sqrt_eps  # * 2.0
+                step_size = self.sqrt_eps
                 theta_p_step = theta_p + step_size
                 d_theta_p = theta_p_step - theta_p  # This doesn't work...
                 theta_f_step = np.copy(parameters)
@@ -165,14 +168,29 @@ class NestedLogitEstimator(ModelEstimator):
                 step_cost = self.cost_function(theta_f_step)
                 gradient[p] = ((step_cost - base_cost) / d_theta_p)
 
-                if p == 0:
-                    print((str(self.iteration) + ' - ' +
-                           str(theta_p) + ' - ' + str(theta_p_step) + ' - ' +
-                           str(base_cost) + ' - ' +
-                           str(step_cost) + ' - ' +
-                           str(gradient[p])))
+                # if p == 0:
+                #     print('%i ~ %0.4f ~ %0.4f ~ %0.4f ~ %0.4f ~ %0.4f'
+                #           % (self.iteration, theta_p, theta_p_step, base_cost, step_cost, gradient[p]))
+
+        print('%i ~ ' % self.iteration + '%0.4f, ' * len(parameters) % tuple(parameters))
+        self.update_plot(self.iteration, base_cost)
         return gradient
 
+    def get_results(self, parameters):
+        plt.savefig(os.path.join(os.path.dirname(__file__), 'images/objective.png'), bbox_inches='tight')
+        return ModelResults(cost=self.cost_function(parameters),
+                            thetas=parameters[:-1 * self.h],
+                            lambdas=parameters[-1 * self.h:],
+                            iteration=self.iteration,
+                            parameters=parameters)
+
+    def update_plot(self, x, y):
+        self.plot.set_xdata(np.append(self.plot.get_xdata(), x))
+        self.plot.set_ydata(np.append(self.plot.get_ydata(), y))
+        self.plot.axes.relim()
+        self.plot.axes.autoscale_view()
+        plt.draw()
+        # plt.show(block=False)
 
 class MultinomialLogitEstimator(ModelEstimator):
     """
@@ -180,10 +198,14 @@ class MultinomialLogitEstimator(ModelEstimator):
     http://ufldl.stanford.edu/wiki/index.php/Softmax_Regression
     """
 
-    def __init__(self, x, y, c):
+    def __init__(self, x, y, c, initial_parameters, parameter_indices, fixed_parameters, variable_indices):
         super(MultinomialLogitEstimator, self).__init__(x, y, c)
         self.theta = np.random.randn(self.k, self.n)
-        self.initial_parameters = np.ravel(self.theta)
+
+        self.initial_parameters = initial_parameters
+        self.parameter_indices = parameter_indices
+        self.fixed_parameters = fixed_parameters
+        self.variable_indices = variable_indices
 
     def cost_function(self, parameters):
         """
@@ -195,42 +217,56 @@ class MultinomialLogitEstimator(ModelEstimator):
         theta - k * n
         """
 
-        theta = np.reshape(parameters, (self.k, self.n))
+        # theta = np.reshape(parameters, (self.k, self.n))
         cost = 0
         for i in range(0, self.m):
+            # j = self.y_index[i]
             for j in range(0, self.k):
-                numerator = np.exp(np.dot(self.x[i], theta[j]))
-                # numerator = np.exp(self.utility_functions[j](self.x[i], parameters))
+                # numerator = np.exp(np.dot(self.x[i], theta[j]))
+                numerator = np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
-                    denominator += np.exp(np.dot(self.x[i], theta[l]))
-                    # denominator += np.exp(self.utility_functions[l](self.x[i], parameters))
+                    # denominator += np.exp(np.dot(self.x[i], theta[l]))
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]],
+                                                 parameters[self.parameter_indices[l]]))
                 cost += self.y[i, j] * np.log(numerator / denominator)
 
-        # regularisation = (0.5 / self.c * np.sum(theta[:, 1:] ** 2))
-        regularisation = (0.5 / self.c * np.sum(theta ** 2))
+        # regularisation = (0.5 / self.c * np.sum(theta ** 2))
+        regularisation = (0.5 / self.c * np.sum(parameters ** 2))
         cost = (-1 * cost + regularisation) / self.m
         return cost
 
     def gradient_function(self, parameters):
         self.iteration += 1
-        theta = np.reshape(parameters, (self.k, self.n))
-        gradient = np.zeros_like(theta)
+        # theta = np.reshape(parameters, (self.k, self.n))
+        # gradient = np.zeros_like(theta)
+        gradient = np.zeros_like(parameters)
         for i in range(0, self.m):
             for j in range(0, self.k):
-                numerator = np.exp(np.dot(self.x[i], theta[j]))
+                # numerator = np.exp(np.dot(self.x[i], theta[j]))
+                numerator = np.exp(np.dot(self.x[i, self.variable_indices[j]], parameters[self.parameter_indices[j]]))
                 denominator = 0
                 for l in range(0, self.k):
-                    denominator += np.exp(np.dot(self.x[i], theta[l]))
-                gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
+                    # denominator += np.exp(np.dot(self.x[i], theta[l]))
+                    denominator += np.exp(np.dot(self.x[i, self.variable_indices[l]],
+                                                 parameters[self.parameter_indices[l]]))
 
-        print((str(self.iteration) + ' - ' +
-               str(parameters[0]) + ' - ' +
-               str(gradient[0][0])))
+                # gradient[j] += self.x[i] * (self.y[i, j] - numerator / denominator)
+                gradient[self.parameter_indices[j]] += (self.x[i, self.variable_indices[j]] *
+                                                        (self.y[i, j] - numerator / denominator))
 
-        penalty_gradient = (1 / self.c) * theta
+        # penalty_gradient = (1 / self.c) * theta
+        penalty_gradient = (1 / self.c) * parameters
         gradient = (-1 * gradient + penalty_gradient) / self.m
+        # return np.ravel(gradient)
         return np.ravel(gradient)
+
+    def get_results(self, parameters):
+        return ModelResults(cost=self.cost_function(parameters),
+                            thetas=parameters,
+                            lambdas=[],
+                            iteration=self.iteration,
+                            parameters=parameters)
 
 
 class LogisticRegressionEstimator(ModelEstimator):
