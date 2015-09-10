@@ -90,7 +90,7 @@ LogitEstimationRunner.print_data_statistics(X, y)
 
 
 start = time.clock()
-my_nl = LogitEstimationRunner.estimate_nested_model(X_scaled, y, C, alts, initial_parameters,
+my_nl = LogitEstimationRunner.estimate_nested_model(X, y, C, alts, initial_parameters,
                                                     fixed_parameters, utility_functions)
 my_nl_time = time.clock() - start
 
