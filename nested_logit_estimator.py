@@ -11,68 +11,72 @@ from sklearn.datasets import load_digits
 # import os
 
 
-np.seterr(all='raise')
-# theano.config.optimizer = 'fast_compile'
+class TheanoNestedLogitEstimator(object):
+    def __init__(self):
+        np.seterr(all='raise')
+        # theano.config.optimizer = 'fast_compile'  # More traceable errors
 
-# Define Theano Functions
-# 1. Calc Utilities matrix, dims=(alternatives, experiments)
-X = T.matrix('X', dtype='float64')
-W = T.matrix('W', dtype='float64')
-b = T.vector('b', dtype='float64')
-calculate_utilities = theano.function([X, W, b], T.dot(X, W) + b, name='calculate_utilities')
+        self.X = T.matrix('X', dtype='float64')
+        self.W = T.matrix('W', dtype='float64')
+        self.b = T.vector('b', dtype='float64')
 
-# 2. Exp of scaled utilities
-V = T.matrix('V', dtype='float64')
-l_expanded = T.vector('l_expanded', dtype='float64')
-calculate_exp_V = theano.function([V, l_expanded], T.exp(V / l_expanded), name='calculate_exp_V')
+        self.l_expanded = T.vector('l_expanded', dtype='float64')
+        self.nests = T.vector('nests', dtype='int64')
+        self.alt_indices = theano.typed_list.TypedListType(T.lvector)()
 
+    def calculate_utilities(self, X, W, b):
+        V = T.dot(X, W) + b
+        return V
 
-# 3. Sum by nest
-exp_V = T.matrix('exp_V', dtype='float64')
-nests = T.vector('nests', dtype='int64')
-alt_indices = theano.typed_list.TypedListType(T.lvector)()  # T.matrix('alt_indices', dtype='int32')
-nest_sums, _ = theano.scan(lambda i_, alt_indices_, exp_V_: exp_V_[:, alt_indices_[i_]].sum(axis=1),
-                           sequences=[nests],
-                           non_sequences=[alt_indices, exp_V])
-calculate_nest_sums = theano.function([exp_V, nests, alt_indices], nest_sums.T, name='calculate_nest_sums')
+    def calculate_exp_V(self, V, l_expanded):
+        exp_V = T.exp(V / l_expanded)
+        return exp_V
 
+    def calculate_nest_sums(self, exp_V, nests, alt_indices):
+        nest_sums_T, _ = theano.scan(lambda i, alt_indices, exp_V: exp_V[:, alt_indices[i]].sum(axis=1),
+                                     sequences=[nests],
+                                     non_sequences=[alt_indices, exp_V])
+        return nest_sums_T.T
 
-# 4. Calc probs
-lambdas = T.vector('lambdas', dtype='float64')
-alternatives = T.vector('alternatives', dtype='int64')
-nest_indices = T.vector('nest_indices', dtype='int64')
-exp_V = T.matrix('exp_V', dtype='float64')
-nest_sums = T.matrix('nest_sums', dtype='float64')
-denominator = np.power(nest_sums, lambdas).sum(axis=1)
-# for i in range(alternatives):
-#     nest_sum = nest_sums[:, nest_indices[i]]
-#     numerator = exp_V[:, i] * np.power(nest_sum, lambdas[nest_indices][i] - 1)
-#     P[:, i] = numerator / denominator
+    def calculate_probabilities_alternative(self, alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
+        numerator = exp_V[:, alt] * np.power(nest_sums[:, nest_indices[alt]], lambdas[nest_indices][alt] - 1)
+        return numerator / denominator
 
+    def calculate_probabilities(self, exp_V, nest_sums, lambdas, alternatives, nest_indices):
+        denominator = np.power(nest_sums, lambdas).sum(axis=1)
 
-def calculate_prob(alt_, lambdas_, nest_indices_, exp_V_, nest_sums_, denominator_):
-    numerator = exp_V_[:, alt_] * np.power(nest_sums_[:, nest_indices_[alt_]], lambdas_[nest_indices_][alt_] - 1)
-    return numerator / denominator_
+        P_T, _ = theano.scan(self.calculate_probabilities_alternative,
+                             sequences=[alternatives],
+                             non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator])
+        return P_T.T
 
-P, _ = theano.scan(calculate_prob,
-                   sequences=[alternatives],
-                   non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator])
-calculate_probs = theano.function([alternatives, lambdas, nest_indices, exp_V, nest_sums],
-                                  P.T, name='calculate_probs')
+    def calculate_predictions(self, P):
+        predictions = T.argmax(P, axis=1)
+        return predictions
 
-# Calculate results
-P = T.matrix('P', dtype='float64')
-calculate_predictions = theano.function([P], T.argmax(P, axis=1), name='calculate_predictions')
+    def calculate_error(self, predictions, y):
+        return T.mean(T.neq(predictions, y))
 
-predictions = T.vector('predictions', dtype='int64')
-y = T.vector('y', dtype='int64')
-calculate_error = theano.function([predictions, y], T.mean(T.neq(predictions, y)), name='calculate_error')
+    def calculate_cost(self, P, y):
+        cost = -T.mean(T.log(P)[T.arange(y.shape[0]), y])
+        return cost
 
 
-# Calc cost
-P = T.matrix('P', dtype='float64')
-y = T.vector('y', dtype='int64')
-calculate_cost = theano.function([P, y], -T.mean(T.log(P)[T.arange(y.shape[0]), y]), name='calculate_cost')
+    def cost_function(self):
+        self.X = digits.data
+        V = self.calculate_utilities(self.X, self.W, self.b)
+        exp_V = self.calculate_exp_V(V, lambdas[nest_indices])
+        nest_sums = self.calculate_nest_sums(exp_V, nests, alt_indices)
+        P = self.calculate_probs(np.arange(alternatives), lambdas, nest_indices, exp_V, nest_sums)
+
+        predictions = self.calculate_predictions(P)
+        error = self.calculate_error(predictions, digits.target)
+        cost = self.calculate_cost(P, digits.target)
+        return error, cost
+
+    def gradient_function(self):
+        W_grad = T.grad(self.cost, wrt=self.W)
+        b_grad = T.grad(self.cost, wrt=self.b)
 
 
 # Setup
@@ -91,14 +95,7 @@ W_input = np.random.rand(data_shape[1], alternatives)
 P = np.zeros((data_shape[0], alternatives))
 b_input = np.zeros(alternatives)
 
-V = calculate_utilities(digits.data, W_input, b_input)
-exp_V = calculate_exp_V(V, lambdas[nest_indices])
-nest_sums = calculate_nest_sums(exp_V, nests, alt_indices)
-P = calculate_probs(np.arange(alternatives), lambdas, nest_indices, exp_V, nest_sums)
 
-predictions = calculate_predictions(P)
-error = calculate_error(predictions, digits.target)
-cost = calculate_cost(P, digits.target)
 
 print(error)
 print(cost)
