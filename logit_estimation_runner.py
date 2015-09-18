@@ -84,7 +84,6 @@ class LogitEstimationRunner:
                                      weights=weights,
                                      initial_parameters=initial_parameters,
                                      fixed_parameters=fixed_parameters,
-<<<<<<< HEAD
                                      utility_functions=utility_functions,
                                      lambda_params=lambda_params)
 
