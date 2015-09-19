@@ -77,6 +77,7 @@ class TheanoNestedLogit(object):
     @staticmethod
     def calculate_cost(P, y):
         cost = -T.mean(T.log(P)[T.arange(y.shape[0]), y])
+        # cost = -T.sum(T.log(P)[T.arange(y.shape[0]), y])
         return cost
 
     def nested_logit_cost(self):
@@ -174,7 +175,7 @@ class NestedLogitEstimator(object):
 
     def estimate(self):
         input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
-        self.gradient_check(self.cost_f, self.gradient_f, input_params)
+        # self.gradient_check(self.cost_f, self.gradient_f, input_params)
         parameters = optimize.fmin_bfgs(self.cost_f,
                                         input_params,
                                         fprime=self.gradient_f,
