@@ -1,3 +1,7 @@
+# This code is from the Theano Deep Learning tutorials.
+# I have edited it some what to suit my needs, and included it here for comparison purposes.
+# Sourced from: http://deeplearning.net/tutorial/code/logistic_sgd.py
+
 __docformat__ = 'restructedtext en'
 
 import pickle
