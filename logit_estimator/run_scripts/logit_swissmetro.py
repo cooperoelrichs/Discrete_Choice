@@ -1,9 +1,12 @@
 # from sklearn import datasets
-from logit_estimation_runner import LogitEstimationRunner
 import time
+
 from numpy import genfromtxt
 from numpy import unique
 import numpy as np
+
+from logit_estimator.logit_estimation_runner import LogitEstimationRunner
+
 
 # X, y = datasets.make_classification(n_samples=1000,
 #                                     n_features=10,

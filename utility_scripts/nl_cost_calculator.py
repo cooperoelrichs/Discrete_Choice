@@ -1,7 +1,7 @@
-from logit_estimation_runner import LogitEstimationRunner
 from numpy import unique
 import numpy as np
-import time
+
+from logit_estimator.logit_estimation_runner import LogitEstimationRunner
 
 
 def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):

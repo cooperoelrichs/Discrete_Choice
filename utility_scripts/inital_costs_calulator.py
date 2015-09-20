@@ -1,7 +1,4 @@
 # from sklearn import datasets
-from logit_estimation_runner import LogitEstimationRunner
-import time
-from numpy import genfromtxt
 from numpy import unique
 import numpy as np
 

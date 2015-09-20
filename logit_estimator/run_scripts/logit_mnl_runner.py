@@ -1,5 +1,7 @@
 from sklearn import datasets
-from logit_estimation_runner import LogitEstimationRunner
+
+from logit_estimator.logit_estimation_runner import LogitEstimationRunner
+
 # from logit_estimator import MultinomialLogitEstimator
 import time
 

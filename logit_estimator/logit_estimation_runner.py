@@ -1,8 +1,9 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn import preprocessing
-from logit_estimator import ModelResults
 import numpy as np
-from logit_estimator import NestedLogitEstimator, LogisticRegressionEstimator,\
+
+from logit_estimator.logit_estimator import ModelResults
+from logit_estimator.logit_estimator import NestedLogitEstimator, LogisticRegressionEstimator,\
     AltLogisticRegressionEstimator, MultinomialLogitEstimator
 
 

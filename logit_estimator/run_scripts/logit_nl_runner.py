@@ -1,6 +1,8 @@
-from sklearn import datasets
-from logit_estimation_runner import LogisticRegressionEstimator
 import time
+
+from sklearn import datasets
+
+from logit_estimator.logit_estimation_runner import LogisticRegressionEstimator
 
 
 def print_run_results(model_name, coefs, cost, run_time, lambdas='not_given'):

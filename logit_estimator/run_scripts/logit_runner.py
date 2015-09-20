@@ -2,11 +2,15 @@
 #
 # Python 3.4 64 bit with SciPy
 
-from sklearn import datasets
-from logit_estimator import LogitEstimator
-from logit_estimator import LogisticRegressionEstimator
-import numpy
 import time
+
+from sklearn import datasets
+import numpy
+
+from logit_estimator.logit_estimator import LogitEstimator
+from logit_estimator.logit_estimator import LogisticRegressionEstimator
+
+
 # import pandas
 
 
