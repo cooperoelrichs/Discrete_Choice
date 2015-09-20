@@ -1,6 +1,6 @@
 import numpy as np
 # from sklearn.datasets import load_digits
-from nested_logit_estimator import NestedLogitEstimator
+from theano_nl_estimator.nested_logit_estimator import NestedLogitEstimator
 
 # Setup
 alternatives = 3
