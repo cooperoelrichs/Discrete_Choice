@@ -32,7 +32,7 @@ weights = dl.get('weight')
 X, y = dl.get_X_and_y()
 y -= 1
 y = y.astype('int64')
-X /= 100  # scale the costs and travel times
+X /= 1000  # scale the costs and travel times
 
 alternatives = 6
 nests = np.array([0, 1, 2], dtype='int32')
@@ -51,6 +51,7 @@ cost, error, _, W, b, lambdas = nle.estimate()
 print(error)
 print(cost)
 print(b)
+print(W)
 print(lambdas)
 
-print('Error is: %.2f' % (error * 100))
+print('Accuracy is: %.2f' % ((1 - error) * 100))
