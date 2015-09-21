@@ -20,10 +20,13 @@ class TheanoNestedLogit(object):
         self.y = T.vector('y', dtype='int64')
         self.initial_W = T.matrix('W', dtype='float64')
         self.initial_b = T.vector('b', dtype='float64')
+        self.initial_l = T.vector('lambdas', dtype='float64')
         self.parameters = T.vector('parameters', dtype='float64')
 
-        # self.l_expanded = T.vector('l_expanded', dtype='float64')
-        self.initial_l = T.vector('lambdas', dtype='float64')
+        self.utility_functions = T.matrix('utility_functions', dtype='float64')
+        self.biases = T.matrix('biases', dtype='float64')
+        self.lambdas = T.matrix('lambdas', dtype='float64')
+
         self.nests = T.vector('nests', dtype='int64')
         self.nest_indices = T.vector('nest_indices', dtype='int64')
         # self.alt_indices = theano.typed_list.TypedListType(T.lvector)()
@@ -104,6 +107,7 @@ class TheanoNestedLogit(object):
     def compile_cost_function(self):
         cost_function = theano.function([self.X, self.y,
                                          self.initial_W, self.initial_b, self.initial_l,
+                                         self.utility_functions, self.biases, self.lambdas,
                                          self.parameters, self.alternatives,
                                          self.nest_indices, self.nests],
                                         [self.cost, self.error, self.predictions])
@@ -121,6 +125,7 @@ class TheanoNestedLogit(object):
         #                          T.grad(self.cost, wrt=self.lambdas))
         grad = theano.function([self.X, self.y,
                                 self.initial_W, self.initial_b, self.initial_l,
+                                self.utility_functions, self.biases, self.lambdas,
                                 self.parameters, self.alternatives, self.alternatives,
                                 self.nest_indices, self.nests],
                                T.grad(self.cost, wrt=self.parameters))
@@ -159,6 +164,7 @@ class NestedLogitEstimator(object):
     def cost(self, parameters):
         cost, _, _ = self.cost_function(self.X, self.y,
                                         self.initial_W, self.initial_b, self.initial_l,
+                                        self.utility_functions, self.biases, self.lambdas,
                                         parameters, self.alternatives,
                                         self.nest_indices, self.nests)
         return cost  # , error, predictions
@@ -166,41 +172,29 @@ class NestedLogitEstimator(object):
     def results(self, parameters):
         cost, error, predictions = self.cost_function(self.X, self.y,
                                                       self.initial_W, self.initial_b, self.initial_l,
-                                                      self.alternatives,
+                                                      self.utility_functions, self.biases, self.lambdas,
+                                                      parameters, self.alternatives,
                                                       self.nest_indices, self.nests)
         return cost, error, predictions
 
-    def cost_f(self, parameters):
-        W = self.initial_W
-        b = self.initial_b
-        l = self.initial_l
-        W[self.utility_functions[[0, 1]]] = parameters[self.utility_functions[2]]
-        b[self.biases[0]] = parameters[self.biases[1]]
-        l[self.lambdas[0]] = parameters[self.lambdas[1]]
-
-        # W, b, lambdas = self.unravel_parameters(parameters)
-        return self.cost(W, b, l)
-
-    def gradient(self, W, b, lambdas):
-        grad = self.gradient_function(self.X, self.y, W, b, lambdas, self.alternatives,
+    def gradient(self, parameters):
+        grad = self.gradient_function(self.X, self.y,
+                                      self.initial_W, self.initial_b, self.initial_l,
+                                      self.utility_functions, self.biases, self.lambdas,
+                                      parameters, self.alternatives,
                                       self.nest_indices, self.nests)
         return grad
 
-    def gradient_f(self, parameters):
-        W, b, lambdas = self.unravel_parameters(parameters)
-        grad_W, grad_b, grad_lambdas = self.gradient(W, b, lambdas)
-        return self.ravel_parameters(grad_W, grad_b, grad_lambdas)
-
-    @staticmethod
-    def ravel_parameters(W, b, lambdas):
-        return np.hstack([np.ravel(W), b, lambdas])
-
-    def unravel_parameters(self, parameters):
-        lambda_index = -1 * self.num_lambdas
-        lambdas = parameters[lambda_index:]
-        W_b = np.reshape(parameters[:lambda_index], (self.W_shape[0] + 1, self.W_shape[1]))
-        W, b = W_b[:-1], W_b[-1]
-        return W, b, lambdas
+    # @staticmethod
+    # def ravel_parameters(W, b, lambdas):
+    #     return np.hstack([np.ravel(W), b, lambdas])
+    #
+    # def unravel_parameters(self, parameters):
+    #     lambda_index = -1 * self.num_lambdas
+    #     lambdas = parameters[lambda_index:]
+    #     W_b = np.reshape(parameters[:lambda_index], (self.W_shape[0] + 1, self.W_shape[1]))
+    #     W, b = W_b[:-1], W_b[-1]
+    #     return W, b, lambdas
 
     def estimate(self):
         # input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
@@ -216,8 +210,8 @@ class NestedLogitEstimator(object):
         return cost, error, predictions
 
     @staticmethod
-    def gradient_check(cost_function, gradient_function, theta):
-        grad_check = optimize.check_grad(cost_function, gradient_function, theta)
+    def gradient_check(cost_function, gradient_function, parameters):
+        grad_check = optimize.check_grad(cost_function, gradient_function, parameters)
         if abs(grad_check) > 1 * 10**-4:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)

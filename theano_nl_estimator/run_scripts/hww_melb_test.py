@@ -60,15 +60,15 @@ l_input = np.zeros(len(nests))
 
 nle = NestedLogitEstimator(X, y, W_input, b_input, lambdas, nests, nest_indices, alternatives,
                            parameters, utility_functions, biases, lambdas)
-cost, error, _ = nle.results(nle.initial_W, nle.initial_b, nle.initial_lambdas)
-print(error)
-print(cost)
-
-cost, error, _, W, b, lambdas = nle.estimate()
-print(error)
-print(cost)
-print(b)
-print(W)
-print(lambdas)
-
-print('Accuracy is: %.2f' % ((1 - error) * 100))
+# cost, error, _ = nle.results(nle.initial_W, nle.initial_b, nle.initial_lambdas)
+# print(error)
+# print(cost)
+#
+# cost, error, _, W, b, lambdas = nle.estimate()
+# print(error)
+# print(cost)
+# print(b)
+# print(W)
+# print(lambdas)
+#
+# print('Accuracy is: %.2f' % ((1 - error) * 100))
