@@ -10,14 +10,17 @@ from nl_data_loader.nl_data_loader import NLDataLoader
 # PAWE_Cost_Outward, a_OuterFrame, WAKE_Cost_Return, a_CBDFrame, Bicycle_av, Car_av,
 # PT_Kiss_Access_av, PT_Park_Access_av, PT_Walk_Access_av, Walk_av
 
+cost_columns = [
+    'Bicycle_Cost_Outward', 'Bicycle_Cost_Return',
+    'Car_Cost_Outward', 'Car_Cost_Return',
+    'WAWE_Cost_Outward', 'WAWE_Cost_Return',
+    'PAWE_Cost_Outward', 'WAPE_Cost_Return',
+    'KAWE_Cost_Outward', 'WAKE_Cost_Return',
+    'Walk_Cost_Outward', 'Walk_Cost_Return',
+]
+
 dl = NLDataLoader('../../data/HWW_Melbourne.dat', '\t',
-                  ['Bicycle_Cost_Outward', 'Bicycle_Cost_Return',
-                   'Car_Cost_Outward', 'Car_Cost_Return',
-                   'WAWE_Cost_Outward', 'WAWE_Cost_Return',
-                   'PAWE_Cost_Outward', 'WAPE_Cost_Return',
-                   'KAWE_Cost_Outward', 'WAKE_Cost_Return',
-                   'Walk_Cost_Outward', 'Walk_Cost_Return',
-                   ],
+                  cost_columns,
                   'choice')
 dl.data = dl.data[dl.get('Bicycle_av') != 0]
 dl.data = dl.data[dl.get('Car_av') != 0]
@@ -37,12 +40,26 @@ X /= 1000  # scale the costs and travel times
 alternatives = 6
 nests = np.array([0, 1, 2], dtype='int32')
 nest_indices = np.array([0, 1, 2, 2, 2, 0])
-lambdas = np.array([1, 1, 1])
+
+# parameters = (n)
+# W = (features, alternatives)
+# f(parameters) => W
+parameters = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+utility_functions = list(zip([(0, 0, 0), (1, 0, 0),  # (feature, alternative, parameter)
+                              (2, 1, 1), (3, 1, 1),
+                              (4, 2, 2), (5, 2, 2),
+                              (6, 3, 3), (7, 3, 3),
+                              (8, 4, 4), (9, 4, 4),
+                              (10, 5, 5), (11, 5, 5)]))
+biases = list(zip([(1, 6), (2, 7), (3, 8), (4, 9), (5, 10)]))
+lambdas = list(zip([(0, 11), (1, 12), (2, 13)]))
 
 W_input = np.zeros((X.shape[1], alternatives))  # rand
 b_input = np.zeros(alternatives)
+l_input = np.zeros(len(nests))
 
-nle = NestedLogitEstimator(X, y, W_input, b_input, lambdas, nests, nest_indices, alternatives)
+nle = NestedLogitEstimator(X, y, W_input, b_input, lambdas, nests, nest_indices, alternatives,
+                           parameters, utility_functions, biases, lambdas)
 cost, error, _ = nle.results(nle.initial_W, nle.initial_b, nle.initial_lambdas)
 print(error)
 print(cost)

@@ -18,11 +18,12 @@ class TheanoNestedLogit(object):
 
         self.X = T.matrix('X', dtype='float64')
         self.y = T.vector('y', dtype='int64')
-        self.W = T.matrix('W', dtype='float64')
-        self.b = T.vector('b', dtype='float64')
+        self.initial_W = T.matrix('W', dtype='float64')
+        self.initial_b = T.vector('b', dtype='float64')
+        self.parameters = T.vector('parameters', dtype='float64')
 
         # self.l_expanded = T.vector('l_expanded', dtype='float64')
-        self.lambdas = T.vector('lambdas', dtype='float64')
+        self.initial_l = T.vector('lambdas', dtype='float64')
         self.nests = T.vector('nests', dtype='int64')
         self.nest_indices = T.vector('nest_indices', dtype='int64')
         # self.alt_indices = theano.typed_list.TypedListType(T.lvector)()
@@ -31,7 +32,8 @@ class TheanoNestedLogit(object):
         self.cost, self.error, self.predictions = self.nested_logit_cost()
 
         self.cost_function = self.compile_cost_function()
-        self.gradient_function_W, self.gradient_function_b, self.gradient_function_l = self.compile_gradient_function()
+        # self.gradient_function_W, self.gradient_function_b, self.gradient_function_l = self.compile_gradient_function()
+        self.gradient_function = self.compile_gradient_function()
 
     @staticmethod
     def calculate_utilities(X, W, b):
@@ -81,8 +83,15 @@ class TheanoNestedLogit(object):
         return cost
 
     def nested_logit_cost(self):
-        V = self.calculate_utilities(self.X, self.W, self.b)
-        exp_V = self.calculate_exp_V(V, self.lambdas[self.nest_indices])
+        W = self.initial_W
+        b = self.initial_b
+        l = self.initial_l
+        W[self.utility_functions[[0, 1]]] = self.parameters[self.utility_functions[2]]
+        b[self.biases[0]] = self.parameters[self.biases[1]]
+        l[self.lambdas[0]] = self.parameters[self.lambdas[1]]
+
+        V = self.calculate_utilities(self.X, W, b)
+        exp_V = self.calculate_exp_V(V, l)
         nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
         P = self.calculate_probabilities(exp_V, nest_sums, self.lambdas,
                                          self.alternatives, self.nest_indices)
@@ -93,69 +102,89 @@ class TheanoNestedLogit(object):
         return cost, error, predictions
 
     def compile_cost_function(self):
-        cost_function = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
+        cost_function = theano.function([self.X, self.y,
+                                         self.initial_W, self.initial_b, self.initial_l,
+                                         self.parameters, self.alternatives,
                                          self.nest_indices, self.nests],
                                         [self.cost, self.error, self.predictions])
         return cost_function
 
     def compile_gradient_function(self):
-        W_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-                                  self.nest_indices, self.nests],
-                                 T.grad(self.cost, wrt=self.W))
-        b_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-                                  self.nest_indices, self.nests],
-                                 T.grad(self.cost, wrt=self.b))
-        l_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-                                  self.nest_indices, self.nests],
-                                 T.grad(self.cost, wrt=self.lambdas))
-        return W_grad, b_grad, l_grad
+        # W_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
+        #                           self.nest_indices, self.nests],
+        #                          T.grad(self.cost, wrt=self.W))
+        # b_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
+        #                           self.nest_indices, self.nests],
+        #                          T.grad(self.cost, wrt=self.b))
+        # l_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
+        #                           self.nest_indices, self.nests],
+        #                          T.grad(self.cost, wrt=self.lambdas))
+        grad = theano.function([self.X, self.y,
+                                self.initial_W, self.initial_b, self.initial_l,
+                                self.parameters, self.alternatives, self.alternatives,
+                                self.nest_indices, self.nests],
+                               T.grad(self.cost, wrt=self.parameters))
+        return grad
 
 
 class NestedLogitEstimator(object):
-    def __init__(self, X, y, initial_W, initial_b, initial_lambdas, nests, nest_indices, alternatives):
+    def __init__(self, X, y, initial_W, initial_b, initial_l, nests, nest_indices, alternatives,
+                 parameters, utility_functions, biases, lambdas):
         self.X = X
         self.y = y
 
         self.initial_W = initial_W
         self.initial_b = initial_b
 
-        self.initial_lambdas = initial_lambdas
+        self.initial_l = initial_l
         self.nests = nests
         self.nest_indices = nest_indices
         # self.alt_indices = alt_indices
         self.alternatives = np.arange(alternatives)
+        self.parameters = parameters
+        self.utility_functions = utility_functions
+        self.biases = biases
+        self.lambdas = lambdas
 
         self.W_shape = initial_W.shape
-        self.num_lambdas = len(initial_lambdas)
+        self.num_nests = len(nests)
 
         tnl = TheanoNestedLogit()
         self.cost_function = tnl.cost_function
-        self.gradient_function_W = tnl.gradient_function_W
-        self.gradient_function_b = tnl.gradient_function_b
-        self.gradient_function_l = tnl.gradient_function_l
+        # self.gradient_function_W = tnl.gradient_function_W
+        # self.gradient_function_b = tnl.gradient_function_b
+        # self.gradient_function_l = tnl.gradient_function_l
+        self.gradient_function = tnl.gradient_function
 
-    def cost(self, W, b, lambdas):
-        cost, _, _ = self.cost_function(self.X, self.y, W, b, lambdas, self.alternatives,
-                                                      self.nest_indices, self.nests)
+    def cost(self, parameters):
+        cost, _, _ = self.cost_function(self.X, self.y,
+                                        self.initial_W, self.initial_b, self.initial_l,
+                                        parameters, self.alternatives,
+                                        self.nest_indices, self.nests)
         return cost  # , error, predictions
 
-    def results(self, W, b, lambdas):
-        cost, error, predictions = self.cost_function(self.X, self.y, W, b, lambdas, self.alternatives,
+    def results(self, parameters):
+        cost, error, predictions = self.cost_function(self.X, self.y,
+                                                      self.initial_W, self.initial_b, self.initial_l,
+                                                      self.alternatives,
                                                       self.nest_indices, self.nests)
         return cost, error, predictions
 
     def cost_f(self, parameters):
-        W, b, lambdas = self.unravel_parameters(parameters)
-        return self.cost(W, b, lambdas)
+        W = self.initial_W
+        b = self.initial_b
+        l = self.initial_l
+        W[self.utility_functions[[0, 1]]] = parameters[self.utility_functions[2]]
+        b[self.biases[0]] = parameters[self.biases[1]]
+        l[self.lambdas[0]] = parameters[self.lambdas[1]]
+
+        # W, b, lambdas = self.unravel_parameters(parameters)
+        return self.cost(W, b, l)
 
     def gradient(self, W, b, lambdas):
-        grad_W = self.gradient_function_W(self.X, self.y, W, b, lambdas, self.alternatives,
-                                          self.nest_indices, self.nests)
-        grad_b = self.gradient_function_b(self.X, self.y, W, b, lambdas, self.alternatives,
-                                          self.nest_indices, self.nests)
-        grad_l = self.gradient_function_l(self.X, self.y, W, b, lambdas, self.alternatives,
-                                          self.nest_indices, self.nests)
-        return grad_W, grad_b, grad_l
+        grad = self.gradient_function(self.X, self.y, W, b, lambdas, self.alternatives,
+                                      self.nest_indices, self.nests)
+        return grad
 
     def gradient_f(self, parameters):
         W, b, lambdas = self.unravel_parameters(parameters)
@@ -174,15 +203,17 @@ class NestedLogitEstimator(object):
         return W, b, lambdas
 
     def estimate(self):
-        input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
+        # input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
         # self.gradient_check(self.cost_f, self.gradient_f, input_params)
-        parameters = optimize.fmin_bfgs(self.cost_f,
-                                        input_params,
-                                        fprime=self.gradient_f,
-                                        gtol=0.0001, disp=False)
-        W, b, lambdas = self.unravel_parameters(parameters)
-        cost, error, predictions = self.results(W, b, lambdas)
-        return cost, error, predictions, W, b, lambdas
+        self.parameters = optimize.fmin_bfgs(self.cost_f,
+                                             self.parameters,
+                                             fprime=self.gradient_f,
+                                             gtol=0.0001, disp=False)
+        # W, b, lambdas = self.unravel_parameters(parameters)
+        # cost, error, predictions = self.results(W, b, lambdas)
+        cost, error, predictions = self.results(self.parameters)
+        # return cost, error, predictions, W, b, lambdas
+        return cost, error, predictions
 
     @staticmethod
     def gradient_check(cost_function, gradient_function, theta):
