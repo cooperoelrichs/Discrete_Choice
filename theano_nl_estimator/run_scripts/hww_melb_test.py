@@ -45,24 +45,25 @@ nest_indices = np.array([0, 1, 2, 2, 2, 0])
 # W = (features, alternatives)
 # f(parameters) => W
 parameters = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
-utility_functions = list(zip([(0, 0, 0), (1, 0, 0),  # (feature, alternative, parameter)
+utility_functions = np.array([(0, 0, 0), (1, 0, 0),  # (feature, alternative, parameter)
                               (2, 1, 1), (3, 1, 1),
                               (4, 2, 2), (5, 2, 2),
                               (6, 3, 3), (7, 3, 3),
                               (8, 4, 4), (9, 4, 4),
-                              (10, 5, 5), (11, 5, 5)]))
-biases = list(zip([(1, 6), (2, 7), (3, 8), (4, 9), (5, 10)]))
-lambdas = list(zip([(0, 11), (1, 12), (2, 13)]))
+                              (10, 5, 5), (11, 5, 5)])
+
+biases = np.array([(1, 6), (2, 7), (3, 8), (4, 9), (5, 10)])
+lambdas = np.array([(0, 11), (1, 12), (2, 13)])
 
 W_input = np.zeros((X.shape[1], alternatives))  # rand
 b_input = np.zeros(alternatives)
 l_input = np.zeros(len(nests))
 
-nle = NestedLogitEstimator(X, y, W_input, b_input, lambdas, nests, nest_indices, alternatives,
+nle = NestedLogitEstimator(X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
                            parameters, utility_functions, biases, lambdas)
-# cost, error, _ = nle.results(nle.initial_W, nle.initial_b, nle.initial_lambdas)
-# print(error)
-# print(cost)
+cost, error, _ = nle.results(parameters)
+print(error)
+print(cost)
 #
 # cost, error, _, W, b, lambdas = nle.estimate()
 # print(error)

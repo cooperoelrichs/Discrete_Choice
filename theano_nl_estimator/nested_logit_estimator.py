@@ -35,8 +35,7 @@ class TheanoNestedLogit(object):
         self.cost, self.error, self.predictions = self.nested_logit_cost()
 
         self.cost_function = self.compile_cost_function()
-        # self.gradient_function_W, self.gradient_function_b, self.gradient_function_l = self.compile_gradient_function()
-        self.gradient_function = self.compile_gradient_function()
+        # self.gradient_function = self.compile_gradient_function()
 
     @staticmethod
     def calculate_utilities(X, W, b):
@@ -44,8 +43,8 @@ class TheanoNestedLogit(object):
         return V
 
     @staticmethod
-    def calculate_exp_V(V, l_expanded):
-        exp_V = T.exp(V / l_expanded)
+    def calculate_exp_V(V, l, nest_indices):
+        exp_V = T.exp(V / l[nest_indices])
         return exp_V
 
     @staticmethod
@@ -59,13 +58,13 @@ class TheanoNestedLogit(object):
         return nest_sums_T.T
 
     @staticmethod
-    def calculate_probabilities_alternative(alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
+    def calculate_probability_for_alternative(alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
         numerator = exp_V[:, alt] * np.power(nest_sums[:, nest_indices[alt]], lambdas[nest_indices][alt] - 1)
         return numerator / denominator
 
     def calculate_probabilities(self, exp_V, nest_sums, lambdas, alternatives, nest_indices):
         denominator = np.power(nest_sums, lambdas).sum(axis=1)
-        P_T, _ = theano.scan(self.calculate_probabilities_alternative,
+        P_T, _ = theano.scan(self.calculate_probability_for_alternative,
                              sequences=[alternatives],
                              non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator])
         return P_T.T
@@ -89,14 +88,15 @@ class TheanoNestedLogit(object):
         W = self.initial_W
         b = self.initial_b
         l = self.initial_l
-        W = T.set_subtensor(W[[self.utility_functions[0], self.utility_functions[1]]], self.parameters[self.utility_functions[2]])
-        b = T.set_subtensor(b[self.biases[0]], self.parameters[self.biases[1]])
-        l = T.set_subtensor(l[self.lambdas[0]], self.parameters[self.lambdas[1]])
+        W = T.set_subtensor(W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+                            self.parameters[self.utility_functions[:, 2]])
+        b = T.set_subtensor(b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
+        l = T.set_subtensor(l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
         V = self.calculate_utilities(self.X, W, b)
-        exp_V = self.calculate_exp_V(V, l)
+        exp_V = self.calculate_exp_V(V, l, self.nest_indices)
         nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
-        P = self.calculate_probabilities(exp_V, nest_sums, self.lambdas,
+        P = self.calculate_probabilities(exp_V, nest_sums, l,
                                          self.alternatives, self.nest_indices)
 
         predictions = self.calculate_predictions(P)
@@ -110,19 +110,11 @@ class TheanoNestedLogit(object):
                                          self.utility_functions, self.biases, self.lambdas,
                                          self.parameters, self.alternatives,
                                          self.nest_indices, self.nests],
-                                        [self.cost, self.error, self.predictions])
+                                        [self.cost, self.error, self.predictions],
+                                        name='cost_function')
         return cost_function
 
     def compile_gradient_function(self):
-        # W_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-        #                           self.nest_indices, self.nests],
-        #                          T.grad(self.cost, wrt=self.W))
-        # b_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-        #                           self.nest_indices, self.nests],
-        #                          T.grad(self.cost, wrt=self.b))
-        # l_grad = theano.function([self.X, self.y, self.W, self.b, self.lambdas, self.alternatives,
-        #                           self.nest_indices, self.nests],
-        #                          T.grad(self.cost, wrt=self.lambdas))
         grad = theano.function([self.X, self.y,
                                 self.initial_W, self.initial_b, self.initial_l,
                                 self.utility_functions, self.biases, self.lambdas,
@@ -156,10 +148,7 @@ class NestedLogitEstimator(object):
 
         tnl = TheanoNestedLogit()
         self.cost_function = tnl.cost_function
-        # self.gradient_function_W = tnl.gradient_function_W
-        # self.gradient_function_b = tnl.gradient_function_b
-        # self.gradient_function_l = tnl.gradient_function_l
-        self.gradient_function = tnl.gradient_function
+        # self.gradient_function = tnl.gradient_function
 
     def cost(self, parameters):
         cost, _, _ = self.cost_function(self.X, self.y,
@@ -184,17 +173,6 @@ class NestedLogitEstimator(object):
                                       parameters, self.alternatives,
                                       self.nest_indices, self.nests)
         return grad
-
-    # @staticmethod
-    # def ravel_parameters(W, b, lambdas):
-    #     return np.hstack([np.ravel(W), b, lambdas])
-    #
-    # def unravel_parameters(self, parameters):
-    #     lambda_index = -1 * self.num_lambdas
-    #     lambdas = parameters[lambda_index:]
-    #     W_b = np.reshape(parameters[:lambda_index], (self.W_shape[0] + 1, self.W_shape[1]))
-    #     W, b = W_b[:-1], W_b[-1]
-    #     return W, b, lambdas
 
     def estimate(self):
         # input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
