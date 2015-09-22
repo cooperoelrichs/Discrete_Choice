@@ -15,6 +15,7 @@ class TheanoNestedLogit(object):
         np.seterr(all='raise')
         theano.config.optimizer = 'fast_compile'  # More traceable errors
         theano.config.exception_verbosity = 'high'  # More traceable errors
+        # theano.config.compute_test_value = 'raise'  # More traceable errors
 
         self.X = T.matrix('X', dtype='float64')
         self.y = T.vector('y', dtype='int64')
@@ -37,6 +38,27 @@ class TheanoNestedLogit(object):
         self.cost_function = self.compile_cost_function()
         # self.gradient_function = self.compile_gradient_function()
 
+        # self.X.tag.test_value = np.array([[1, 1, 1, 1, 1, 1],
+        #                                   [1, 1, 1, 1, 1, 1],
+        #                                   [1, 1, 1, 1, 1, 1],
+        #                                   [1, 1, 1, 1, 1, 1]], dtype='float64')
+        # self.y.tag.test_value = [0, 1, 2]
+        # self.initial_W.tag.test_value = [[0, 0, 0],
+        #                                  [0, 0, 0],
+        #                                  [0, 0, 0],
+        #                                  [0, 0, 0],
+        #                                  [0, 0, 0],
+        #                                  [0, 0, 0]]
+        # self.initial_b.tag.test_value = [0, 0, 0]
+        # self.initial_l.tag.test_value = [0, 0]
+        # self.utility_functions.tag.test_value = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], dtype='int64')
+        # self.biases.tag.test_value = [[1, 3], [2, 4]]
+        # self.lambdas.tag.test_value = [[1, 5], [2, 6]]
+        # self.parameters.tag.test_value = [0, 0, 0, 0, 0, 0, 0]
+        # self.alternatives.tag.test_value = [0, 1, 2]
+        # self.nest_indices.tag.test_value = [0, 0, 1]
+        # self.nests.tag.test_value = [0, 1]
+
     @staticmethod
     def calculate_utilities(X, W, b):
         V = T.dot(X, W) + b
@@ -47,15 +69,23 @@ class TheanoNestedLogit(object):
         exp_V = T.exp(V / l[nest_indices])
         return exp_V
 
-    @staticmethod
-    def calculate_nest_sums(exp_V, nests, nest_indices):
+    # @staticmethod
+    def calculate_nest_sums(self, exp_V, nests, nest_indices):
         # nest_sums_T, _ = theano.scan(lambda i, alt_indices, exp_V: exp_V[:, alt_indices[i]].sum(axis=1),
         nest_sums_T, _ = theano.scan(
-            lambda i, nest_indices, exp_V: exp_V[:, T.eq(nest_indices, i).nonzero()[0]].sum(axis=1),
+            self.sum_nest_for_nest,
             sequences=[nests],
-            non_sequences=[nest_indices, exp_V]
+            non_sequences=[nest_indices, exp_V],
+            name='sum_exp_utilities_by_nests'
         )
         return nest_sums_T.T
+
+    @staticmethod
+    def sum_nest_for_nest(i, nest_indices, exp_V):
+        indices = T.eq(nest_indices, i).nonzero()[0]
+        exp_V_i = exp_V[:, indices]
+        sum = exp_V_i.sum(axis=1)
+        return sum
 
     @staticmethod
     def calculate_probability_for_alternative(alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
@@ -66,7 +96,8 @@ class TheanoNestedLogit(object):
         denominator = np.power(nest_sums, lambdas).sum(axis=1)
         P_T, _ = theano.scan(self.calculate_probability_for_alternative,
                              sequences=[alternatives],
-                             non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator])
+                             non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator],
+                             name='calculate_probabilities_by_alternatives')
         return P_T.T
 
     @staticmethod
@@ -85,19 +116,16 @@ class TheanoNestedLogit(object):
         return cost
 
     def nested_logit_cost(self):
-        W = self.initial_W
-        b = self.initial_b
-        l = self.initial_l
-        W = T.set_subtensor(W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+        # a[[b[:,0],b[:,1]]] = c[b[:,2]]
+        W = T.set_subtensor(self.initial_W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
                             self.parameters[self.utility_functions[:, 2]])
-        b = T.set_subtensor(b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
-        l = T.set_subtensor(l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
+        b = T.set_subtensor(self.initial_b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
+        l = T.set_subtensor(self.initial_l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
         V = self.calculate_utilities(self.X, W, b)
         exp_V = self.calculate_exp_V(V, l, self.nest_indices)
         nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
-        P = self.calculate_probabilities(exp_V, nest_sums, l,
-                                         self.alternatives, self.nest_indices)
+        P = self.calculate_probabilities(exp_V, nest_sums, l, self.alternatives, self.nest_indices)
 
         predictions = self.calculate_predictions(P)
         error = self.calculate_error(predictions, self.y)
@@ -111,7 +139,7 @@ class TheanoNestedLogit(object):
                                          self.parameters, self.alternatives,
                                          self.nest_indices, self.nests],
                                         [self.cost, self.error, self.predictions],
-                                        name='cost_function')
+                                        name='cost_function')  # mode='DebugMode'
         return cost_function
 
     def compile_gradient_function(self):
@@ -137,7 +165,7 @@ class NestedLogitEstimator(object):
         self.nests = nests
         self.nest_indices = nest_indices
         # self.alt_indices = alt_indices
-        self.alternatives = np.arange(alternatives)
+        self.alternatives = alternatives
         self.parameters = parameters
         self.utility_functions = utility_functions
         self.biases = biases
@@ -163,7 +191,7 @@ class NestedLogitEstimator(object):
                                                       self.initial_W, self.initial_b, self.initial_l,
                                                       self.utility_functions, self.biases, self.lambdas,
                                                       parameters, self.alternatives,
-                                                      self.nest_indices, self.nests)
+                                                      self.nest_indices, self.nests,)
         return cost, error, predictions
 
     def gradient(self, parameters):

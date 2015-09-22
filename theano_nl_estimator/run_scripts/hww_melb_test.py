@@ -2,6 +2,8 @@ import numpy as np
 from theano_nl_estimator.nested_logit_estimator import NestedLogitEstimator
 from nl_data_loader.nl_data_loader import NLDataLoader
 
+import theano.tensor as T
+
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,
 # CarOwnershipConstant23, WAWE_Cost_Outward, KAWE_Cost_Outward, Bicycle_Cost_Outward,
@@ -37,9 +39,9 @@ y -= 1
 y = y.astype('int64')
 X /= 1000  # scale the costs and travel times
 
-alternatives = 6
-nests = np.array([0, 1, 2], dtype='int32')
-nest_indices = np.array([0, 1, 2, 2, 2, 0])
+alternatives = np.array([0, 1, 2, 3, 4, 5], dtype='int64')
+nests = np.array([0, 1, 2], dtype='int64')
+nest_indices = np.array([0, 1, 2, 2, 2, 0], dtype='int64')
 
 # parameters = (n)
 # W = (features, alternatives)
@@ -55,9 +57,9 @@ utility_functions = np.array([(0, 0, 0), (1, 0, 0),  # (feature, alternative, pa
 biases = np.array([(1, 6), (2, 7), (3, 8), (4, 9), (5, 10)])
 lambdas = np.array([(0, 11), (1, 12), (2, 13)])
 
-W_input = np.zeros((X.shape[1], alternatives))  # rand
-b_input = np.zeros(alternatives)
-l_input = np.zeros(len(nests))
+W_input = np.zeros((X.shape[1], alternatives.shape[0]))  # rand
+b_input = np.zeros_like(alternatives)
+l_input = np.ones_like(nests)
 
 nle = NestedLogitEstimator(X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
                            parameters, utility_functions, biases, lambdas)
