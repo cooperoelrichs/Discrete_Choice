@@ -14,7 +14,7 @@ class TheanoNestedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
         theano.config.optimizer = 'fast_compile'  # More traceable errors
-        # theano.config.exception_verbosity = 'high'  # More traceable errors
+        theano.config.exception_verbosity = 'high'  # More traceable errors
 
         self.X = T.matrix('X', dtype='float64')
         self.y = T.vector('y', dtype='int64')
@@ -23,9 +23,9 @@ class TheanoNestedLogit(object):
         self.initial_l = T.vector('lambdas', dtype='float64')
         self.parameters = T.vector('parameters', dtype='float64')
 
-        self.utility_functions = T.matrix('utility_functions', dtype='float64')
-        self.biases = T.matrix('biases', dtype='float64')
-        self.lambdas = T.matrix('lambdas', dtype='float64')
+        self.utility_functions = T.matrix('utility_functions', dtype='int64')
+        self.biases = T.matrix('biases', dtype='int64')
+        self.lambdas = T.matrix('lambdas', dtype='int64')
 
         self.nests = T.vector('nests', dtype='int64')
         self.nest_indices = T.vector('nest_indices', dtype='int64')
@@ -89,9 +89,9 @@ class TheanoNestedLogit(object):
         W = self.initial_W
         b = self.initial_b
         l = self.initial_l
-        W[self.utility_functions[[0, 1]]] = self.parameters[self.utility_functions[2]]
-        b[self.biases[0]] = self.parameters[self.biases[1]]
-        l[self.lambdas[0]] = self.parameters[self.lambdas[1]]
+        W = T.set_subtensor(W[[self.utility_functions[0], self.utility_functions[1]]], self.parameters[self.utility_functions[2]])
+        b = T.set_subtensor(b[self.biases[0]], self.parameters[self.biases[1]])
+        l = T.set_subtensor(l[self.lambdas[0]], self.parameters[self.lambdas[1]])
 
         V = self.calculate_utilities(self.X, W, b)
         exp_V = self.calculate_exp_V(V, l)
