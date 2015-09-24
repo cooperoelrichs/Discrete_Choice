@@ -13,15 +13,16 @@ from scipy import optimize
 class TheanoNestedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        theano.config.optimizer = 'fast_compile'  # More traceable errors
+        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
         theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'  # More traceable errors
 
         self.X = T.matrix('X', dtype='float64')
         self.y = T.vector('y', dtype='int64')
-        self.initial_W = T.matrix('W', dtype='float64')
-        self.initial_b = T.vector('b', dtype='float64')
-        self.initial_l = T.vector('lambdas', dtype='float64')
+        self.W_input = T.matrix('W_input', dtype='float64')
+        # self.W_input = T.TensorType('float64', (True, False))('W_input')  # T.matrix('W_input', dtype='float64')
+        self.b_input = T.vector('b_input', dtype='float64')
+        self.l_input = T.vector('l_input', dtype='float64')
         self.parameters = T.vector('parameters', dtype='float64')
 
         self.utility_functions = T.matrix('utility_functions', dtype='int64')
@@ -117,10 +118,20 @@ class TheanoNestedLogit(object):
 
     def nested_logit_cost(self):
         # a[[b[:,0],b[:,1]]] = c[b[:,2]]
-        W = T.set_subtensor(self.initial_W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
-                            self.parameters[self.utility_functions[:, 2]])
-        b = T.set_subtensor(self.initial_b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
-        l = T.set_subtensor(self.initial_l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
+        W = self.W_input
+        b = self.b_input
+        l = self.l_input
+
+        print(self.X.broadcastable)
+        print(W.broadcastable)
+
+        W = T.set_subtensor(W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+                                       self.parameters[self.utility_functions[:, 2]])
+        b = T.set_subtensor(b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
+        l = T.set_subtensor(l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
+
+        print(self.X.broadcastable)
+        print(W.broadcastable)
 
         V = self.calculate_utilities(self.X, W, b)
         exp_V = self.calculate_exp_V(V, l, self.nest_indices)
@@ -134,7 +145,7 @@ class TheanoNestedLogit(object):
 
     def compile_cost_function(self):
         cost_function = theano.function([self.X, self.y,
-                                         self.initial_W, self.initial_b, self.initial_l,
+                                         self.W_input, self.b_input, self.l_input,
                                          self.utility_functions, self.biases, self.lambdas,
                                          self.parameters, self.alternatives,
                                          self.nest_indices, self.nests],
@@ -144,7 +155,7 @@ class TheanoNestedLogit(object):
 
     def compile_gradient_function(self):
         grad = theano.function([self.X, self.y,
-                                self.initial_W, self.initial_b, self.initial_l,
+                                self.W_input, self.b_input, self.l_input,
                                 self.utility_functions, self.biases, self.lambdas,
                                 self.parameters, self.alternatives, self.alternatives,
                                 self.nest_indices, self.nests],
@@ -153,15 +164,15 @@ class TheanoNestedLogit(object):
 
 
 class NestedLogitEstimator(object):
-    def __init__(self, X, y, initial_W, initial_b, initial_l, nests, nest_indices, alternatives,
+    def __init__(self, X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
                  parameters, utility_functions, biases, lambdas):
         self.X = X
         self.y = y
 
-        self.initial_W = initial_W
-        self.initial_b = initial_b
+        self.W_input = W_input
+        self.b_input = b_input
 
-        self.initial_l = initial_l
+        self.l_input = l_input
         self.nests = nests
         self.nest_indices = nest_indices
         # self.alt_indices = alt_indices
@@ -171,7 +182,7 @@ class NestedLogitEstimator(object):
         self.biases = biases
         self.lambdas = lambdas
 
-        self.W_shape = initial_W.shape
+        self.W_shape = W_input.shape
         self.num_nests = len(nests)
 
         tnl = TheanoNestedLogit()
@@ -180,7 +191,7 @@ class NestedLogitEstimator(object):
 
     def cost(self, parameters):
         cost, _, _ = self.cost_function(self.X, self.y,
-                                        self.initial_W, self.initial_b, self.initial_l,
+                                        self.W_input, self.b_input, self.l_input,
                                         self.utility_functions, self.biases, self.lambdas,
                                         parameters, self.alternatives,
                                         self.nest_indices, self.nests)
@@ -188,7 +199,7 @@ class NestedLogitEstimator(object):
 
     def results(self, parameters):
         cost, error, predictions = self.cost_function(self.X, self.y,
-                                                      self.initial_W, self.initial_b, self.initial_l,
+                                                      self.W_input, self.b_input, self.l_input,
                                                       self.utility_functions, self.biases, self.lambdas,
                                                       parameters, self.alternatives,
                                                       self.nest_indices, self.nests,)
@@ -196,7 +207,7 @@ class NestedLogitEstimator(object):
 
     def gradient(self, parameters):
         grad = self.gradient_function(self.X, self.y,
-                                      self.initial_W, self.initial_b, self.initial_l,
+                                      self.W_input, self.b_input, self.l_input,
                                       self.utility_functions, self.biases, self.lambdas,
                                       parameters, self.alternatives,
                                       self.nest_indices, self.nests)

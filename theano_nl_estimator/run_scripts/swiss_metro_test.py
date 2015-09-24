@@ -28,7 +28,7 @@ b_input = np.zeros(alternatives)
 # P = np.zeros((data_shape[0], alternatives))
 
 nle = NestedLogitEstimator(X, y, W_input, b_input, lambdas, nests, nest_indices, alternatives)
-cost, error, _ = nle.results(nle.initial_W, nle.initial_b, nle.initial_lambdas)
+cost, error, _ = nle.results(nle.W_input, nle.b_input, nle.initial_lambdas)
 print(error)
 print(cost)
 
