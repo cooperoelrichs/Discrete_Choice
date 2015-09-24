@@ -99,14 +99,10 @@ class TheanoNestedLogit(object):
 
     def nested_logit_cost(self):
         # a[[b[:,0],b[:,1]]] = c[b[:,2]]
-        W = self.W_input
-        b = self.b_input
-        l = self.l_input
-
-        W = T.set_subtensor(W[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+        W = T.set_subtensor(self.W_input[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
                             self.parameters[self.utility_functions[:, 2]])
-        b = T.set_subtensor(b[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
-        l = T.set_subtensor(l[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
+        b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
+        l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
         V = self.calculate_utilities(self.X, W, b)
         exp_V = self.calculate_exp_V(V, l, self.nest_indices)
@@ -126,7 +122,7 @@ class TheanoNestedLogit(object):
                                          self.alternatives,
                                          self.nest_indices, self.nests],
                                         [self.cost, self.error, self.predictions],
-                                        name='cost_function', mode='DebugMode')
+                                        name='cost_function')  # , mode='DebugMode')
         return cost_function
 
     def compile_gradient_function(self):
