@@ -99,7 +99,8 @@ class TheanoNestedLogit(object):
 
     def nested_logit_cost(self):
         # a[[b[:,0],b[:,1]]] = c[b[:,2]]
-        W = self.update_W()
+        W = T.set_subtensor(self.W_input[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+                            self.parameters[self.utility_functions[:, 2]])
         b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
         l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
@@ -112,15 +113,6 @@ class TheanoNestedLogit(object):
         error = self.calculate_error(predictions, self.y)
         cost = self.calculate_cost(P, self.y)
         return cost, error, predictions
-
-    def update_W(self):
-        # T.set_subtensor(self.W_input[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
-        #                 self.parameters[self.utility_functions[:, 2]])
-        P_T, _ = theano.scan(lambda i, W_input, parameters: T.set_subtensor(W_input[i[0], i[1]], parameters[2], inplace=True),
-                     sequences=[self.utility_functions],
-                     non_sequences=[self.W_input, self.parameters],
-                     name='calculate_probabilities_by_alternatives')
-        return
 
     def compile_cost_function(self):
         cost_function = theano.function([self.X, self.y,
