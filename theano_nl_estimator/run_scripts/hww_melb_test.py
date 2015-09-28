@@ -1,6 +1,7 @@
 import numpy as np
 from theano_nl_estimator.nested_logit_estimator import NestedLogitEstimator
 from nl_data_loader.nl_data_loader import NLDataLoader
+import time
 
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,
@@ -41,8 +42,11 @@ alternatives = np.array([0, 1, 2, 3, 4, 5], dtype='int64')
 nests = np.array([0, 1, 2], dtype='int64')
 nest_indices = np.array([0, 1, 2, 2, 2, 0], dtype='int64')
 
-input_parameters = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
-input_parameters = np.ones_like(input_parameters)
+input_parameters = np.random.randn(14)  # np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+input_parameters[[11, 12, 13]] = 1
+# input_parameters = np.ones_like(input_parameters)
+print(input_parameters)
+
 utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
                               [2, 1, 1], [3, 1, 1],
                               [4, 2, 2], [5, 2, 2],
@@ -63,7 +67,10 @@ cost, error, _ = nle.results(input_parameters)
 print(error)
 print(cost)
 
+start_time = time.clock()
 cost, error, predictions, output_parameters = nle.estimate()
+end_time = time.clock()
+
 print(error)
 print(cost)
 W, b, l = nle.extract_parameters(output_parameters)
@@ -71,4 +78,5 @@ print(b)
 print(W)
 print(l)
 
+print('Estimate time: %.2f' % (end_time - start_time))
 print('Accuracy is: %.2f' % ((1 - error) * 100))

@@ -13,8 +13,8 @@ from scipy import optimize
 class TheanoNestedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        theano.config.exception_verbosity = 'high'  # More traceable errors
+        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
 
         float_type = 'float64'
@@ -186,16 +186,14 @@ class NestedLogitEstimator(object):
         return grad
 
     def estimate(self):
-        # input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
-        # self.gradient_check(self.cost_f, self.gradient_f, input_params)
+        self.gradient_check(self.cost, self.gradient, self.parameters)
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.0001, disp=False)
-        # W, b, lambdas = self.unravel_parameters(parameters)
-        # cost, error, predictions = self.results(W, b, lambdas)
+                                             gtol=0.000001, disp=False)
+
         cost, error, predictions = self.results(self.parameters)
-        # return cost, error, predictions, W, b, lambdas
+        self.gradient_check(self.cost, self.gradient, self.parameters)
         return cost, error, predictions, self.parameters
 
     def extract_parameters(self, parameters):
@@ -208,6 +206,6 @@ class NestedLogitEstimator(object):
     @staticmethod
     def gradient_check(cost_function, gradient_function, parameters):
         grad_check = optimize.check_grad(cost_function, gradient_function, parameters)
-        if abs(grad_check) > 1 * 10**-4:
+        if abs(grad_check) > 1 * 10**-5:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)
