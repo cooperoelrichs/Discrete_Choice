@@ -190,22 +190,25 @@ class NestedLogitEstimator(object):
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.000001, disp=False)
+                                             gtol=0.000001, disp=True)
 
-        cost, error, predictions = self.results(self.parameters)
         self.gradient_check(self.cost, self.gradient, self.parameters)
+        cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
 
     def extract_parameters(self, parameters):
-        W = self.W_input[(self.utility_functions[:, 0], self.utility_functions[:, 1])] = \
-            self.parameters[self.utility_functions[:, 2]]
-        b = self.b_input[self.biases[:, 0]] = parameters[self.biases[:, 1]]
-        l = self.l_input[self.lambdas[:, 0]] = parameters[self.lambdas[:, 1]]
+        W = self.W_input
+        b = self.b_input
+        l = self.l_input
+
+        W[(self.utility_functions[:, 0], self.utility_functions[:, 1])] = self.parameters[self.utility_functions[:, 2]]
+        b[self.biases[:, 0]] = parameters[self.biases[:, 1]]
+        l[self.lambdas[:, 0]] = parameters[self.lambdas[:, 1]]
         return W, b, l
 
     @staticmethod
     def gradient_check(cost_function, gradient_function, parameters):
         grad_check = optimize.check_grad(cost_function, gradient_function, parameters)
-        if abs(grad_check) > 1 * 10**-5:
+        if abs(grad_check) > 1 * 10**-4:
             error = 'Gradient failed check with an error of ' + str(grad_check)
             raise ValueError(error)

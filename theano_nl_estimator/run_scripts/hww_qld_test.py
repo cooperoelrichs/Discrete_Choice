@@ -20,7 +20,7 @@ cost_columns = [
     'Walk_Cost_Outward', 'Walk_Cost_Return',
 ]
 
-dl = NLDataLoader('../../data/HWW_Melbourne.dat', '\t', cost_columns, 'choice')
+dl = NLDataLoader('../../data/HWW_Queensland.dat', '\t', cost_columns, 'choice')
 dl.data = dl.data[dl.get('Bicycle_av') != 0]
 dl.data = dl.data[dl.get('Car_av') != 0]
 dl.data = dl.data[dl.get('PT_Walk_Access_av') != 0]
@@ -45,6 +45,7 @@ input_parameters[[11, 12, 13]] = 1
 parameter_names = ['cost_bicycle', 'cost_car', 'cost_pt1', 'cost_pt2', 'cost_pt3', 'cost_walk',
                    'b_bicycle', 'b_car', 'b_pt1', 'b_pt2', 'b_pt3',
                    'l_active', 'l_car', 'l_pt']
+# input_parameters = np.ones_like(input_parameters)
 
 utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
                               [2, 1, 1], [3, 1, 1],
@@ -63,6 +64,7 @@ l_input = np.ones_like(nests, dtype='float64')
 nle = NestedLogitEstimator(X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
                            input_parameters, utility_functions, biases, lambdas)
 initial_cost, initial_error, _ = nle.results(input_parameters)
+initial_grad = nle.gradient(input_parameters)
 
 start_time = time.clock()
 cost, error, predictions, output_parameters = nle.estimate()
@@ -79,6 +81,7 @@ def print_params(params_, names_):
         print('%s: %.2f' % (names_[i], x))
 
 print_params(output_parameters, parameter_names)
+print(initial_grad)
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % (initial_cost * X.shape[0]))
 print('Initial Accuracy is: %.2f' % (1 - initial_error))
