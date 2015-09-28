@@ -39,7 +39,7 @@ class TheanoNestedLogit(object):
         self.cost, self.error, self.predictions = self.nested_logit_cost()
 
         self.cost_function = self.compile_cost_function()
-        # self.gradient_function = self.compile_gradient_function()
+        self.gradient_function = self.compile_gradient_function()
 
     @staticmethod
     def calculate_utilities(X, W, b):
@@ -99,7 +99,7 @@ class TheanoNestedLogit(object):
 
     def nested_logit_cost(self):
         # a[[b[:,0],b[:,1]]] = c[b[:,2]]
-        W = T.set_subtensor(self.W_input[[self.utility_functions[:, 0], self.utility_functions[:, 1]]],
+        W = T.set_subtensor(self.W_input[(self.utility_functions[:, 0], self.utility_functions[:, 1])],
                             self.parameters[self.utility_functions[:, 2]])
         b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
         l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
@@ -129,9 +129,11 @@ class TheanoNestedLogit(object):
         grad = theano.function([self.X, self.y,
                                 self.W_input, self.b_input, self.l_input,
                                 self.utility_functions, self.biases, self.lambdas,
-                                self.parameters, self.alternatives, self.alternatives,
+                                self.parameters,
+                                self.alternatives,
                                 self.nest_indices, self.nests],
-                               T.grad(self.cost, wrt=self.parameters))
+                               T.grad(self.cost, wrt=self.parameters),
+                               name='cost_function')
         return grad
 
 
@@ -159,16 +161,11 @@ class NestedLogitEstimator(object):
 
         tnl = TheanoNestedLogit()
         self.cost_function = tnl.cost_function
-        # self.gradient_function = tnl.gradient_function
+        self.gradient_function = tnl.gradient_function
 
     def cost(self, parameters):
-        cost, _, _ = self.cost_function(self.X, self.y,
-                                        self.W_input, self.b_input, self.l_input,
-                                        self.utility_functions, self.biases, self.lambdas,
-                                        parameters,
-                                        self.alternatives,
-                                        self.nest_indices, self.nests)
-        return cost  # , error, predictions
+        cost, _, _ = self.results(parameters)
+        return cost
 
     def results(self, parameters):
         cost, error, predictions = self.cost_function(self.X, self.y,
@@ -176,29 +173,37 @@ class NestedLogitEstimator(object):
                                                       self.utility_functions, self.biases, self.lambdas,
                                                       parameters,
                                                       self.alternatives,
-                                                      self.nest_indices, self.nests,)
+                                                      self.nest_indices, self.nests)
         return cost, error, predictions
 
     def gradient(self, parameters):
         grad = self.gradient_function(self.X, self.y,
                                       self.W_input, self.b_input, self.l_input,
                                       self.utility_functions, self.biases, self.lambdas,
-                                      parameters, self.alternatives,
+                                      parameters,
+                                      self.alternatives,
                                       self.nest_indices, self.nests)
         return grad
 
     def estimate(self):
         # input_params = self.ravel_parameters(self.initial_W, self.initial_b, self.initial_lambdas)
         # self.gradient_check(self.cost_f, self.gradient_f, input_params)
-        self.parameters = optimize.fmin_bfgs(self.cost_f,
+        self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
-                                             fprime=self.gradient_f,
+                                             fprime=self.gradient,
                                              gtol=0.0001, disp=False)
         # W, b, lambdas = self.unravel_parameters(parameters)
         # cost, error, predictions = self.results(W, b, lambdas)
         cost, error, predictions = self.results(self.parameters)
         # return cost, error, predictions, W, b, lambdas
-        return cost, error, predictions
+        return cost, error, predictions, self.parameters
+
+    def extract_parameters(self, parameters):
+        W = self.W_input[(self.utility_functions[:, 0], self.utility_functions[:, 1])] = \
+            self.parameters[self.utility_functions[:, 2]]
+        b = self.b_input[self.biases[:, 0]] = parameters[self.biases[:, 1]]
+        l = self.l_input[self.lambdas[:, 0]] = parameters[self.lambdas[:, 1]]
+        return W, b, l
 
     @staticmethod
     def gradient_check(cost_function, gradient_function, parameters):

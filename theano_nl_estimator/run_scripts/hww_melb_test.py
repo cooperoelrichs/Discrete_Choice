@@ -41,17 +41,14 @@ alternatives = np.array([0, 1, 2, 3, 4, 5], dtype='int64')
 nests = np.array([0, 1, 2], dtype='int64')
 nest_indices = np.array([0, 1, 2, 2, 2, 0], dtype='int64')
 
-# parameters = (n)
-# W = (features, alternatives)
-# f(parameters) => W
-parameters = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
-parameters = np.ones_like(parameters)
-# utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
-#                               [2, 1, 1], [3, 1, 1],
-#                               [4, 2, 2], [5, 2, 2],
-#                               [6, 3, 3], [7, 3, 3],
-#                               [8, 4, 4], [9, 4, 4],
-#                               [10, 5, 5], [11, 5, 5]])
+input_parameters = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+input_parameters = np.ones_like(input_parameters)
+utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
+                              [2, 1, 1], [3, 1, 1],
+                              [4, 2, 2], [5, 2, 2],
+                              [6, 3, 3], [7, 3, 3],
+                              [8, 4, 4], [9, 4, 4],
+                              [10, 5, 5], [11, 5, 5]])
 
 biases = np.array([[1, 6], [2, 7], [3, 8], [4, 9], [5, 10]])
 lambdas = np.array([[0, 11], [1, 12], [2, 13]])
@@ -60,29 +57,17 @@ W_input = np.zeros((X.shape[1], alternatives.shape[0]), dtype='float64')  # rand
 b_input = np.zeros_like(alternatives, dtype='float64')
 l_input = np.ones_like(nests, dtype='float64')
 
-
-import theano
-import theano.tensor as T
-x_i = T.vector('x_i', dtype='float64')
-params = T.vector('params', dtype='float64')
-v_0 = theano.function(inputs=[x_i, params], outputs=[T.dot(x_i[[0, 1]], params[[0, 0]])], name='v_0')
-v_1 = theano.function(inputs=[x_i, params], outputs=[T.dot(x_i[[2, 3]], params[[1, 1]]) + params[6]], name='v_1')
-v_2 = T.dot(x_i[[4, 5]], params[[2, 2]]) + params[7]
-v_3 = T.dot(x_i[[6, 7]], params[[3, 3]]) + params[8]
-v_4 = T.dot(x_i[[8, 9]], params[[4, 4]]) + params[9]
-v_5 = T.dot(x_i[[10, 11]], params[[5, 5]]) + params[10]
-
 nle = NestedLogitEstimator(X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
-                           parameters, utility_functions, biases, lambdas)
-cost, error, _ = nle.results(parameters)
+                           input_parameters, utility_functions, biases, lambdas)
+cost, error, _ = nle.results(input_parameters)
 print(error)
 print(cost)
-#
-# cost, error, _, W, b, lambdas = nle.estimate()
-# print(error)
-# print(cost)
-# print(b)
-# print(W)
-# print(lambdas)
-#
-# print('Accuracy is: %.2f' % ((1 - error) * 100))
+
+cost, error, predictions, output_parameters = nle.estimate()
+print(error)
+print(cost)
+W, b, l = nle.extract_parameters(output_parameters)
+print(b)print(W)
+print(l)
+
+print('Accuracy is: %.2f' % ((1 - error) * 100))
