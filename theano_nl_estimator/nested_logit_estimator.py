@@ -167,7 +167,14 @@ class NestedLogitEstimator(object):
         cost, _, _ = self.results(parameters)
         return cost
 
+    def maybe_fix_dtype(self, parameters):
+        if theano.config.floatX == 'float32':
+            # optimize.fmin_bfgs changes the dtype of parameters to float64
+            parameters = parameters.astype('float32')
+        return parameters
+
     def results(self, parameters):
+        parameters = self.maybe_fix_dtype(parameters)
         cost, error, predictions = self.cost_function(self.X, self.y,
                                                       self.W_input, self.b_input, self.l_input,
                                                       self.utility_functions, self.biases, self.lambdas,
@@ -177,6 +184,7 @@ class NestedLogitEstimator(object):
         return cost, error, predictions
 
     def gradient(self, parameters):
+        parameters = self.maybe_fix_dtype(parameters)
         grad = self.gradient_function(self.X, self.y,
                                       self.W_input, self.b_input, self.l_input,
                                       self.utility_functions, self.biases, self.lambdas,
@@ -190,7 +198,7 @@ class NestedLogitEstimator(object):
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.000001, disp=True)
+                                             gtol=0.0000000001, disp=True)
 
         # self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)

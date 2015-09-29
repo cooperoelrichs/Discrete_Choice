@@ -46,9 +46,11 @@ nest_indices = np.array([0, 1, 2, 2, 2, 0], dtype=int_dtype)
 input_parameters = np.random.randn(14).astype(float_dtype)
 input_parameters[[11, 12, 13]] = 1
 
-parameter_names = ['cost_bicycle', 'cost_car', 'cost_pt1', 'cost_pt2', 'cost_pt3', 'cost_walk',
-                   'b_bicycle', 'b_car', 'b_pt1', 'b_pt2', 'b_pt3',
-                   'l_active', 'l_car', 'l_pt']
+parameter_names = [
+    'cost_bicycle', 'cost_car', 'cost_pt1', 'cost_pt2', 'cost_pt3', 'cost_walk',
+    'b_bicycle', 'b_car', 'b_pt1', 'b_pt2', 'b_pt3',
+    'l_active', 'l_car', 'l_pt'
+]
 
 utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
                               [2, 1, 1], [3, 1, 1],
