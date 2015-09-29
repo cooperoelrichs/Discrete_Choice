@@ -168,17 +168,6 @@ class NestedLogitEstimator(object):
         return cost
 
     def results(self, parameters):
-
-        print('===================')
-        for x in [self.X, self.y,
-                  self.W_input, self.b_input, self.l_input,
-                  self.utility_functions, self.biases, self.lambdas,
-                  parameters,
-                  self.alternatives,
-                  self.nest_indices, self.nests]:
-            pass
-            print(x.dtype)
-
         cost, error, predictions = self.cost_function(self.X, self.y,
                                                       self.W_input, self.b_input, self.l_input,
                                                       self.utility_functions, self.biases, self.lambdas,
