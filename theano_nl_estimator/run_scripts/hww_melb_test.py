@@ -36,7 +36,6 @@ dl.data = dl.data[dl.get('Walk_av') != 0]
 dl.print_data_info()
 weights = dl.get('weight')
 X, y = dl.get_X_and_y()
-y -= 1
 X /= 1000  # scale the costs and travel times
 
 alternatives = np.array([0, 1, 2, 3, 4, 5], dtype=int_dtype)
@@ -68,7 +67,7 @@ b_input = np.zeros_like(alternatives, dtype=float_dtype)
 l_input = np.ones_like(nests, dtype=float_dtype)
 
 nle = NestedLogitEstimator(X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
-                           input_parameters, utility_functions, biases, lambdas)
+                           input_parameters, utility_functions, biases, lambdas, weights)
 initial_cost, initial_error, _ = nle.results(input_parameters)
 
 start_time = time.clock()
@@ -89,7 +88,7 @@ def print_params(params_, names_):
 print_params(output_parameters, parameter_names)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
-print('Initial Cost is: %.2f' % (initial_cost * X.shape[0]))
+print('Initial Cost is: %.2f' % initial_cost)
 print('Initial Accuracy is: %.2f' % (1 - initial_error))
-print('Cost is: %.2f' % (cost * X.shape[0]))
+print('Cost is: %.2f' % cost)
 print('Accuracy is: %.2f' % (1 - error))

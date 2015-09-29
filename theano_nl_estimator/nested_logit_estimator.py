@@ -36,6 +36,8 @@ class TheanoNestedLogit(object):
         # self.alt_indices = theano.typed_list.TypedListType(T.lvector)()
         self.alternatives = T.vector('alternatives', dtype=int_type)
 
+        self.weights = T.vector('weights', dtype=float_type)
+
         self.cost, self.error, self.predictions = self.nested_logit_cost()
 
         self.cost_function = self.compile_cost_function()
@@ -92,8 +94,10 @@ class TheanoNestedLogit(object):
         return T.mean(T.neq(predictions, y))
 
     @staticmethod
-    def calculate_cost(P, y):
-        cost = -T.mean(T.log(P)[T.arange(y.shape[0]), y])
+    def calculate_cost(P, y, weights):
+        costs = T.log(P)[T.arange(y.shape[0]), y]
+        # cost = - T.dot(costs, weights)
+        cost = -T.mean(costs * weights)
         # cost = -T.sum(T.log(P)[T.arange(y.shape[0]), y])
         return cost
 
@@ -111,7 +115,7 @@ class TheanoNestedLogit(object):
 
         predictions = self.calculate_predictions(P)
         error = self.calculate_error(predictions, self.y)
-        cost = self.calculate_cost(P, self.y)
+        cost = self.calculate_cost(P, self.y, self.weights)
         return cost, error, predictions
 
     def compile_cost_function(self):
@@ -120,7 +124,8 @@ class TheanoNestedLogit(object):
                                          self.utility_functions, self.biases, self.lambdas,
                                          self.parameters,
                                          self.alternatives,
-                                         self.nest_indices, self.nests],
+                                         self.nest_indices, self.nests,
+                                         self.weights],
                                         [self.cost, self.error, self.predictions],
                                         name='cost_function')  # , mode='DebugMode')
         return cost_function
@@ -131,7 +136,8 @@ class TheanoNestedLogit(object):
                                 self.utility_functions, self.biases, self.lambdas,
                                 self.parameters,
                                 self.alternatives,
-                                self.nest_indices, self.nests],
+                                self.nest_indices, self.nests,
+                                self.weights],
                                T.grad(self.cost, wrt=self.parameters),
                                name='cost_function')
         return grad
@@ -139,7 +145,7 @@ class TheanoNestedLogit(object):
 
 class NestedLogitEstimator(object):
     def __init__(self, X, y, W_input, b_input, l_input, nests, nest_indices, alternatives,
-                 parameters, utility_functions, biases, lambdas):
+                 parameters, utility_functions, biases, lambdas, weights):
         self.X = X
         self.y = y
 
@@ -155,6 +161,8 @@ class NestedLogitEstimator(object):
         self.utility_functions = utility_functions
         self.biases = biases
         self.lambdas = lambdas
+
+        self.weights = weights
 
         self.W_shape = W_input.shape
         self.num_nests = len(nests)
@@ -180,7 +188,8 @@ class NestedLogitEstimator(object):
                                                       self.utility_functions, self.biases, self.lambdas,
                                                       parameters,
                                                       self.alternatives,
-                                                      self.nest_indices, self.nests)
+                                                      self.nest_indices, self.nests,
+                                                      self.weights)
         return cost, error, predictions
 
     def gradient(self, parameters):
@@ -190,7 +199,8 @@ class NestedLogitEstimator(object):
                                       self.utility_functions, self.biases, self.lambdas,
                                       parameters,
                                       self.alternatives,
-                                      self.nest_indices, self.nests)
+                                      self.nest_indices, self.nests,
+                                      self.weights)
         return grad
 
     def estimate(self):
@@ -198,7 +208,7 @@ class NestedLogitEstimator(object):
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.0000000001, disp=True)
+                                             gtol=0.0000001, disp=True)
 
         # self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)

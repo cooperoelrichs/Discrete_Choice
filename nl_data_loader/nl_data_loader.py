@@ -30,7 +30,10 @@ class NLDataLoader(object):
     def get_X_and_y(self):
         X_indices = [self.header_indices[name] for name in self.X_columns]
         y_index = self.header_indices[self.y_column]
-        return self.data[:, X_indices], self.data[:, y_index].astype(self.int_dtype)
+
+        X = self.data[:, X_indices]
+        y = self.data[:, y_index].astype(self.int_dtype) - 1  # Adjust y to be zero based
+        return X, y
 
     def print_data_info(self):
         print('Original data shape: ' + str(self.original_shape))
