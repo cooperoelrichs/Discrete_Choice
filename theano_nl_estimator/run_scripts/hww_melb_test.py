@@ -1,10 +1,12 @@
 import numpy as np
+import theano
 from theano_nl_estimator.nested_logit_estimator import NestedLogitEstimator
 from nl_data_loader.nl_data_loader import NLDataLoader
 import time
 
-float_dtype = 'float32'
+float_dtype = theano.config.floatX
 int_dtype = 'int32'
+np.seterr(all='raise')
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,
 # CarOwnershipConstant23, WAWE_Cost_Outward, KAWE_Cost_Outward, Bicycle_Cost_Outward,
@@ -71,6 +73,7 @@ start_time = time.clock()
 cost, error, predictions, output_parameters = nle.estimate()
 end_time = time.clock()
 
+final_grad = nle.gradient(output_parameters)
 # W, b, l = nle.extract_parameters(output_parameters)
 # print(b)
 # print(W)
@@ -82,6 +85,7 @@ def print_params(params_, names_):
         print('%s: %.2f' % (names_[i], x))
 
 print_params(output_parameters, parameter_names)
+print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % (initial_cost * X.shape[0]))
 print('Initial Accuracy is: %.2f' % (1 - initial_error))

@@ -6,7 +6,8 @@ theanorc_with_gpu = (
     "[global]\n"
     "device = gpu\n"
     "floatX = float32\n"
-    "config.numpy.seterr_all = raise\n"
+    "numpy.seterr_all = raise\n"
+    "assert_no_cpu_op = warn\n"
     "\n"
     "[cuda]\n"
     "root = /Developer/NVIDIA/CUDA-7.5"
@@ -16,7 +17,7 @@ theanorc_with_cpu = (
     "[global]\n"
     "device = cpu\n"
     "floatX = float64\n"
-    "config.numpy.seterr_all = raise"
+    "numpy.seterr_all = raise"
 )
 
 
