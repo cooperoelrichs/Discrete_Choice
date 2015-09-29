@@ -17,8 +17,8 @@ class TheanoNestedLogit(object):
         # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
 
-        float_type = 'float64'
-        int_type = 'int64'
+        float_type = 'floatX'
+        int_type = 'int32'
 
         self.X = T.matrix('X', dtype=float_type)
         self.y = T.vector('y', dtype=int_type)
@@ -168,6 +168,17 @@ class NestedLogitEstimator(object):
         return cost
 
     def results(self, parameters):
+
+        print('===================')
+        for x in [self.X, self.y,
+                  self.W_input, self.b_input, self.l_input,
+                  self.utility_functions, self.biases, self.lambdas,
+                  parameters,
+                  self.alternatives,
+                  self.nest_indices, self.nests]:
+            pass
+            print(x.dtype)
+
         cost, error, predictions = self.cost_function(self.X, self.y,
                                                       self.W_input, self.b_input, self.l_input,
                                                       self.utility_functions, self.biases, self.lambdas,
@@ -186,13 +197,13 @@ class NestedLogitEstimator(object):
         return grad
 
     def estimate(self):
-        self.gradient_check(self.cost, self.gradient, self.parameters)
+        # self.gradient_check(self.cost, self.gradient, self.parameters)
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
                                              gtol=0.000001, disp=True)
 
-        self.gradient_check(self.cost, self.gradient, self.parameters)
+        # self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
 
