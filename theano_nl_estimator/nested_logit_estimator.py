@@ -13,8 +13,8 @@ from scipy import optimize
 class TheanoNestedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        # theano.config.exception_verbosity = 'high'  # More traceable errors
+        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
 
         float_type = 'floatX'
@@ -45,17 +45,15 @@ class TheanoNestedLogit(object):
 
     @staticmethod
     def calculate_utilities(X, W, b):
-        V = T.dot(X, W) + b
-        return V
+        return T.dot(X, W) + b
 
     @staticmethod
     def calculate_exp_V(V, l, nest_indices):
-        exp_V = T.exp(V / l[nest_indices])
-        return exp_V
+        V_scaled = V / l[nest_indices]
+        V_scaled_and_clipped = T.clip(V_scaled, -80, 80)
+        return T.exp(V_scaled_and_clipped)  # - V_scaled.max(axis=1, keepdims=True))
 
-    # @staticmethod
     def calculate_nest_sums(self, exp_V, nests, nest_indices):
-        # nest_sums_T, _ = theano.scan(lambda i, alt_indices, exp_V: exp_V[:, alt_indices[i]].sum(axis=1),
         nest_sums_T, _ = theano.scan(
             self.sum_nest_for_nest,
             sequences=[nests],
@@ -66,10 +64,7 @@ class TheanoNestedLogit(object):
 
     @staticmethod
     def sum_nest_for_nest(i, nest_indices, exp_V):
-        indices = T.eq(nest_indices, i).nonzero()[0]
-        exp_V_i = exp_V[:, indices]
-        sum = exp_V_i.sum(axis=1)
-        return sum
+        return exp_V[:, T.eq(nest_indices, i).nonzero()[0]].sum(axis=1)
 
     @staticmethod
     def calculate_probability_for_alternative(alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
@@ -86,8 +81,7 @@ class TheanoNestedLogit(object):
 
     @staticmethod
     def calculate_predictions(P):
-        predictions = T.argmax(P, axis=1)
-        return predictions
+        return T.argmax(P, axis=1)
 
     @staticmethod
     def calculate_error(predictions, y):
@@ -95,14 +89,11 @@ class TheanoNestedLogit(object):
 
     @staticmethod
     def calculate_cost(P, y, weights):
-        costs = T.log(P)[T.arange(y.shape[0]), y]
         # cost = - T.dot(costs, weights)
-        cost = -T.mean(costs * weights)
         # cost = -T.sum(T.log(P)[T.arange(y.shape[0]), y])
-        return cost
+        return -T.mean(T.log(P)[T.arange(y.shape[0]), y] * weights)
 
     def nested_logit_cost(self):
-        # a[[b[:,0],b[:,1]]] = c[b[:,2]]
         W = T.set_subtensor(self.W_input[(self.utility_functions[:, 0], self.utility_functions[:, 1])],
                             self.parameters[self.utility_functions[:, 2]])
         b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
