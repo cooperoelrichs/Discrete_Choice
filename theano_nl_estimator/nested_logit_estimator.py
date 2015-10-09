@@ -18,7 +18,7 @@ class TheanoNestedLogit(object):
         # theano.config.compute_test_value = 'raise'
 
         float_type = 'floatX'
-        int_type = 'int32'
+        int_type = 'int64'
 
         self.X = T.matrix('X', dtype=float_type)
         self.y = T.vector('y', dtype=int_type)

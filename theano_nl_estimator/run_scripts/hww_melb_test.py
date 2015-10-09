@@ -5,7 +5,7 @@ from nl_data_loader.nl_data_loader import NLDataLoader
 import time
 
 float_dtype = theano.config.floatX
-int_dtype = 'int32'
+int_dtype = 'int64'
 np.seterr(all='raise')
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,
@@ -51,13 +51,15 @@ parameter_names = [
     'l_active', 'l_car', 'l_pt'
 ]
 
-utility_functions = np.array([[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
-                              [2, 1, 1], [3, 1, 1],
-                              [4, 2, 2], [5, 2, 2],
-                              [6, 3, 3], [7, 3, 3],
-                              [8, 4, 4], [9, 4, 4],
-                              [10, 5, 5], [11, 5, 5]],
-                             dtype=int_dtype)
+utility_functions = np.array(
+    [[0, 0, 0], [1, 0, 0],  # (feature, alternative, parameter)
+     [2, 1, 1], [3, 1, 1],
+     [4, 2, 2], [5, 2, 2],
+     [6, 3, 3], [7, 3, 3],
+     [8, 4, 4], [9, 4, 4],
+     [10, 5, 5], [11, 5, 5]],
+    dtype=int_dtype
+)
 
 biases = np.array([[0, 6], [1, 7], [2, 8], [3, 9], [4, 10]], dtype=int_dtype)
 lambdas = np.array([[0, 11], [1, 12], [2, 13]], dtype=int_dtype)
