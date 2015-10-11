@@ -1,0 +1,17 @@
+\documentclass[20pt]{extarticle}
+
+\begin{document}
+
+\title{Nested Logit: Numerical Stability Improvments}
+\author{Cooper Oelrichs}
+
+Nested Logit
+\[
+  P_{ni}=
+  \frac{e^{V_{ni}/\lambda_{k}}
+  \left(\sum_{j\in B_{k}}e^{V_{nj}/\lambda_{k}}\right)
+  ^{\lambda_{k}-1}}
+  {\sum_{l=1}^{K}\left(\sum_{j\in B_{l}}e^{V_{nj}/\lambda_{l}}\right)^{\lambda_{l}}}
+\]
+
+\end{document}
