@@ -6,18 +6,17 @@
 \author{Cooper Oelrichs}
 
 Nested Logit
-\[
+\begin{align}
   P_{ni}=
   \frac{e^{V_{ni}/\lambda_{k}}
   \left(\sum_{j\in B_{k}}e^{V_{nj}/\lambda_{k}}\right)
   ^{\lambda_{k}-1}}
   {\sum_{l=1}^{K}\left(\sum_{j\in B_{l}}
   e^{V_{nj}/\lambda_{l}}\right)^{\lambda_{l}}}
-\]
+\end{align}
 
-
+\\
 Numerical stability adjustments
-
 \begin{align}
   V_{nj} &= W_{nj} + \theta
   \\
