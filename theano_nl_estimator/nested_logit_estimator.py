@@ -13,8 +13,8 @@ from scipy import optimize
 class TheanoNestedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        theano.config.exception_verbosity = 'high'  # More traceable errors
+        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
 
         float_type = 'floatX'
@@ -50,8 +50,8 @@ class TheanoNestedLogit(object):
     @staticmethod
     def calculate_exp_V(V, l, nest_indices):
         V_scaled = V / l[nest_indices]
-        V_scaled_and_clipped = T.clip(V_scaled, -80, 80)
-        return T.exp(V_scaled_and_clipped)  # - V_scaled.max(axis=1, keepdims=True))
+        # V_scaled = T.clip(V_scaled, -80, 80)
+        return T.exp(V_scaled)
 
     def calculate_nest_sums(self, exp_V, nests, nest_indices):
         nest_sums_T, _ = theano.scan(
@@ -100,6 +100,7 @@ class TheanoNestedLogit(object):
         l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
         V = self.calculate_utilities(self.X, W, b)
+        V = V  # - V.mean(axis=1, keepdims=True)  # Numerical stability
         exp_V = self.calculate_exp_V(V, l, self.nest_indices)
         nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
         P = self.calculate_probabilities(exp_V, nest_sums, l, self.alternatives, self.nest_indices)

@@ -42,7 +42,7 @@ alternatives = np.array([0, 1, 2, 3, 4, 5], dtype=int_dtype)
 nests = np.array([0, 1, 2], dtype=int_dtype)
 nest_indices = np.array([0, 1, 2, 2, 2, 0], dtype=int_dtype)
 
-input_parameters = np.random.randn(14).astype(float_dtype)
+input_parameters = np.zeros(14)  # np.random.randn(14).astype(float_dtype)
 input_parameters[[11, 12, 13]] = 1
 
 parameter_names = [
