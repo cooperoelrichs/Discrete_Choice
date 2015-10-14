@@ -7,53 +7,53 @@
 
 Nested Logit
 \begin{align}
-  P_{ni}=
-  \frac{e^{V_{ni}/\lambda_{k}}
-  \left(\sum_{j\in B_{k}}e^{V_{nj}/\lambda_{k}}\right)
+  P_{i}=
+  \frac{e^{V_{i}/\lambda_{k}}
+  \left(\sum_{j\in B_{k}}e^{V_{j}/\lambda_{k}}\right)
   ^{\lambda_{k}-1}}
   {\sum_{l=1}^{K}\left(\sum_{j\in B_{l}}
-  e^{V_{nj}/\lambda_{l}}\right)^{\lambda_{l}}}
+  e^{V_{j}/\lambda_{l}}\right)^{\lambda_{l}}}
 \end{align}
 
 \\
 Numerical stability adjustments
 \begin{align}
-  V_{nj} &= W_{nj} + \theta
+  V_{j} &= W_{j} + \theta
   \\
-  P_{ni} &= \frac{
-    e^{ \frac{W_{ni}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
+  P_{i} &= \frac{
+    e^{ \frac{W_{i}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
     \left(\sum_{j\in B_{k}}
-    e^{ \frac{W_{ni}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
+    e^{ \frac{W_{j}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
     \right)
     ^{\lambda_{k}-1}
   }
   {
     \sum_{l=1}^{K}\left(\sum_{j\in B_{l}}
-    e^{ \frac{W_{ni}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
+    e^{ \frac{W_{j}}{\lambda_{l}} + \frac{\theta}{\lambda_{l}} }
     \right)^{\lambda_{l}}
   }
   \\
   &= \frac{
-    e^{ \frac{W_{ni}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
+    e^{ \frac{W_{i}}{\lambda_{k}} + \frac{\theta}{\lambda_{k}} }
     \cdot
     e^{ \frac{\theta}{\lambda_{k}} (\lambda_{k}-1) }
-    \left(\sum_{j\in B_{k}}e^{W_{nj}/\lambda_{k}}\right)
+    \left(\sum_{j\in B_{k}}e^{W_{j}/\lambda_{k}}\right)
     ^{\lambda_{k}-1}
   }
   {
     e^\theta \cdot
     {\sum_{l=1}^i{K}\left(\sum_{j\in B_{l}}
-    e^{W_{nj}/\lambda_{l}}\right)^{\lambda_{l}}}
+    e^{W_{j}/\lambda_{l}}\right)^{\lambda_{l}}}
   }
   \\
   &= \frac{
-      e^{ W_{ni} / \lambda_{k} }
-      \left(\sum_{j\in B_{k}}e^{W_{nj}/\lambda_{k}}\right)
+      e^{ W_{i} / \lambda_{k} }
+      \left(\sum_{j\in B_{k}}e^{W_{j}/\lambda_{k}}\right)
       ^{\lambda_{k}-1}
     }
     {
       {\sum_{l=1}^{K}\left(\sum_{j\in B_{l}}
-      e^{W_{nj}/\lambda_{l}}\right)^{\lambda_{l}}}
+      e^{W_{j}/\lambda_{l}}\right)^{\lambda_{l}}}
     }
 \end{align}
 
