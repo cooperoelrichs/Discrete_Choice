@@ -43,16 +43,6 @@ class TheanoNestedLogit(object):
         self.cost_function = self.compile_cost_function()
         self.gradient_function = self.compile_gradient_function()
 
-    @staticmethod
-    def calculate_utilities(X, W, b):
-        return T.dot(X, W) + b
-
-    @staticmethod
-    def calculate_exp_V(V, l, nest_indices):
-        V_scaled = V / l[nest_indices]
-        # V_scaled = T.clip(V_scaled, -80, 80)
-        return T.exp(V_scaled)
-
     def calculate_nest_sums(self, exp_V, nests, nest_indices):
         nest_sums_T, _ = theano.scan(
             self.sum_nest_for_nest,
@@ -66,32 +56,22 @@ class TheanoNestedLogit(object):
     def sum_nest_for_nest(i, nest_indices, exp_V):
         return exp_V[:, T.eq(nest_indices, i).nonzero()[0]].sum(axis=1)
 
+    def calculate_probabilities(self, exp_V, lambdas, alternatives, nest_indices):
+        nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
+        denominator = np.power(nest_sums, lambdas).sum(axis=1)
+
+        P_T, _ = theano.scan(
+            self.calculate_probability_for_alternative,
+            sequences=[alternatives],
+            non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator],
+            name='calculate_probabilities_by_alternatives'
+        )
+        return P_T.T
+
     @staticmethod
     def calculate_probability_for_alternative(alt, lambdas, nest_indices, exp_V, nest_sums, denominator):
         numerator = exp_V[:, alt] * np.power(nest_sums[:, nest_indices[alt]], lambdas[nest_indices][alt] - 1)
         return numerator / denominator
-
-    def calculate_probabilities(self, exp_V, nest_sums, lambdas, alternatives, nest_indices):
-        denominator = np.power(nest_sums, lambdas).sum(axis=1)
-        P_T, _ = theano.scan(self.calculate_probability_for_alternative,
-                             sequences=[alternatives],
-                             non_sequences=[lambdas, nest_indices, exp_V, nest_sums, denominator],
-                             name='calculate_probabilities_by_alternatives')
-        return P_T.T
-
-    @staticmethod
-    def calculate_predictions(P):
-        return T.argmax(P, axis=1)
-
-    @staticmethod
-    def calculate_error(predictions, y):
-        return T.mean(T.neq(predictions, y))
-
-    @staticmethod
-    def calculate_cost(P, y, weights):
-        # cost = - T.dot(costs, weights)
-        # cost = -T.sum(T.log(P)[T.arange(y.shape[0]), y])
-        return -T.mean(T.log(P)[T.arange(y.shape[0]), y] * weights)
 
     def nested_logit_cost(self):
         W = T.set_subtensor(self.W_input[(self.utility_functions[:, 0], self.utility_functions[:, 1])],
@@ -99,15 +79,15 @@ class TheanoNestedLogit(object):
         b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
         l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
-        V = self.calculate_utilities(self.X, W, b)
-        V = V  # - V.mean(axis=1, keepdims=True)  # Numerical stability
-        exp_V = self.calculate_exp_V(V, l, self.nest_indices)
-        nest_sums = self.calculate_nest_sums(exp_V, self.nests, self.nest_indices)
-        P = self.calculate_probabilities(exp_V, nest_sums, l, self.alternatives, self.nest_indices)
+        V = T.dot(self.X, W) + b  # calculate utilities
+        # V = V - V.mean(axis=1, keepdims=True)  # numerical stability
+        # V = T.clip(V, -80, 80)  # numerical stability
+        exp_V = T.exp(V / l[self.nest_indices])  # exp of the scaled utilities
+        P = self.calculate_probabilities(exp_V, l, self.alternatives, self.nest_indices)
 
-        predictions = self.calculate_predictions(P)
-        error = self.calculate_error(predictions, self.y)
-        cost = self.calculate_cost(P, self.y, self.weights)
+        predictions = T.argmax(P, axis=1)
+        error = T.mean(T.neq(predictions, self.y))
+        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights)
         return cost, error, predictions
 
     def compile_cost_function(self):
