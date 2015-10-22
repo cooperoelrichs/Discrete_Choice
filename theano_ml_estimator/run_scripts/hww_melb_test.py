@@ -44,6 +44,9 @@ input_parameters = np.zeros(11 + 12)  # np.random.randn(14).astype(float_dtype)
 parameter_names = [
     'b_bicycle', 'b_car', 'b_pt1', 'b_pt2', 'b_pt3',
     'cost_bicycle', 'cost_car', 'cost_pt1', 'cost_pt2', 'cost_pt3', 'cost_walk',
+    'error_bicycle', 'error_car', 'error_pt1', 'error_pt2', 'error_pt3', 'error_walk',
+    'random_cost_bicycle', 'random_cost_car', 'random_cost_pt1', 'random_cost_pt2',
+    'random_cost_pt3', 'random_cost_walk',
 ]
 
 biases = np.array([[0, 0], [1, 1], [2, 2], [3, 3], [4, 4]], dtype=int_dtype)
