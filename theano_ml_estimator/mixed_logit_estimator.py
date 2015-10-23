@@ -17,8 +17,8 @@ class TheanoMixedLogit(object):
         # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
         # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
-        theano.config.profile = True
-        theano.config.profile_memory = True
+        # theano.config.profile = True
+        # theano.config.profile_memory = True
 
         float_type = 'floatX'
         int_type = 'int64'
@@ -44,7 +44,7 @@ class TheanoMixedLogit(object):
         self.gradient_function = self.compile_gradient_function()
 
     def multinomial_logit_cost(self):
-        srng = RandomStreams(seed=234)
+        srng = RandomStreams(seed=2341)
 
         # I HATE UTILITY FUNCTIONS
         W = T.set_subtensor(self.W_input[(self.costs[:, 0], self.costs[:, 1])],
@@ -56,16 +56,17 @@ class TheanoMixedLogit(object):
         b_rp = T.set_subtensor(self.b_rp_input[self.rp_biases[:, 0]], self.parameters[self.rp_biases[:, 1]])
 
         # Random draws
-        num_draws = 5
-        num_alternatives = 6
-        dims = (num_alternatives, num_draws)
+        num_draws = 1000
+        num_alternatives = T.max(self.y)
+        num_observations = self.X.shape[0]
+        dims = (num_observations, num_alternatives, num_draws)
         cost_draws = -T.log(-T.log(srng.uniform(dims)))
         bias_draws = -T.log(-T.log(srng.uniform(dims)))
 
         # V = b + w_cost * cost + w_random_cost * cost_draw * cost + w_random_error * error_draw
         V = T.dot(self.X, W) + b
-        V_rp = (T.dot(self.X, W_rp)[:, :, np.newaxis] * cost_draws[np.newaxis, :, :] +
-                (b_rp[:, np.newaxis] * bias_draws)[np.newaxis, :, :])
+        V_rp = (T.dot(self.X, W_rp)[:, :, np.newaxis] * cost_draws +
+                (b_rp[:, np.newaxis, np.newaxis] * bias_draws))
 
         V = V[:, :, np.newaxis] + V_rp
         # P = T.nnet.softmax(V)
@@ -74,7 +75,7 @@ class TheanoMixedLogit(object):
 
         predictions = T.argmax(P, axis=1)
         error = T.mean(T.neq(predictions, self.y[:, np.newaxis]))
-        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights[:, np.newaxis, np.newaxis])
+        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights[:, np.newaxis])
         return cost, error, predictions
 
     def compile_cost_function(self):
@@ -86,20 +87,20 @@ class TheanoMixedLogit(object):
                                          self.parameters,
                                          self.weights],
                                         [self.cost, self.error, self.predictions],
-                                        name='cost_function')  # , mode='DebugMode')
+                                        name='cost_function')  #, on_unused_input='ignore')  # , mode='DebugMode')
         return cost_function
 
     def compile_gradient_function(self):
-        grad = theano.function([self.X, self.y,
-                                self.W_input, self.b_input,
-                                self.W_rp_input, self.b_rp_input,
-                                self.costs, self.biases,
-                                self.rp_costs, self.rp_biases,
-                                self.parameters,
-                                self.weights],
-                               T.grad(self.cost, wrt=self.parameters),
-                               name='cost_function')
-        return grad
+        grad_function = theano.function([self.X, self.y,
+                                         self.W_input, self.b_input,
+                                         self.W_rp_input, self.b_rp_input,
+                                         self.costs, self.biases,
+                                         self.rp_costs, self.rp_biases,
+                                         self.parameters,
+                                         self.weights],
+                                        T.grad(self.cost, wrt=self.parameters),
+                                        name='gradient_function', on_unused_input='ignore')
+        return grad_function
 
 
 class MixedLogitEstimator(object):
@@ -164,7 +165,7 @@ class MixedLogitEstimator(object):
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.00001, disp=True)
+                                             gtol=0.0000001, disp=True)
 
         # self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)

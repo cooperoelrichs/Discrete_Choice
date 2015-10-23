@@ -31,6 +31,7 @@ dl.data = dl.data[dl.get('PT_Walk_Access_av') != 0]
 dl.data = dl.data[dl.get('PT_Park_Access_av') != 0]
 dl.data = dl.data[dl.get('PT_Kiss_Access_av') != 0]
 dl.data = dl.data[dl.get('Walk_av') != 0]
+# dl.data = dl.data[:1000]
 # dl.data = dl.data[dl.get('SP') != 0]
 # dl.data = dl.data[(dl.get('PURPOSE') == 1) | (dl.get('PURPOSE') == 3)]
 dl.print_data_info()
@@ -76,7 +77,7 @@ W_input = np.zeros((X.shape[1], num_alternatives), dtype=float_dtype)  # rand
 W_rand_input = np.zeros((X.shape[1], num_alternatives), dtype=float_dtype)
 error_input = np.zeros(num_alternatives, dtype=float_dtype)
 
-mle = MixedLogitEstimator(X[0:100], y[0:100], W_input, b_input, W_rand_input, error_input,
+mle = MixedLogitEstimator(X, y, W_input, b_input, W_rand_input, error_input,
                           input_parameters, cost_params, biases, random_cost_params, random_error_params, weights)
 initial_cost, initial_error, _ = mle.results(input_parameters)
 
