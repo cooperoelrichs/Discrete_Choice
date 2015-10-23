@@ -14,9 +14,11 @@ from theano.tensor.shared_randomstreams import RandomStreams
 class TheanoMixedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        theano.config.exception_verbosity = 'high'  # More traceable errors
+        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
+        theano.config.profile = True
+        theano.config.profile_memory = True
 
         float_type = 'floatX'
         int_type = 'int64'
@@ -54,7 +56,7 @@ class TheanoMixedLogit(object):
         b_rp = T.set_subtensor(self.b_rp_input[self.rp_biases[:, 0]], self.parameters[self.rp_biases[:, 1]])
 
         # Random draws
-        num_draws = 1000
+        num_draws = 5
         num_alternatives = 6
         dims = (num_alternatives, num_draws)
         cost_draws = -T.log(-T.log(srng.uniform(dims)))
@@ -62,17 +64,17 @@ class TheanoMixedLogit(object):
 
         # V = b + w_cost * cost + w_random_cost * cost_draw * cost + w_random_error * error_draw
         V = T.dot(self.X, W) + b
-        V_rp_cost = T.dot(self.X, W_rp) * cost_draws
-        V_rp_bias = bias_draws * b_rp
-        V_rp = V_rp_cost + V_rp_bias
-        V = V_rp.T + V
+        V_rp = (T.dot(self.X, W_rp)[:, :, np.newaxis] * cost_draws[np.newaxis, :, :] +
+                (b_rp[:, np.newaxis] * bias_draws)[np.newaxis, :, :])
+
+        V = V[:, :, np.newaxis] + V_rp
         # P = T.nnet.softmax(V)
         e_V = T.exp(V - V.max(axis=1, keepdims=True))
         P = e_V / e_V.sum(axis=1, keepdims=True)
 
         predictions = T.argmax(P, axis=1)
-        error = T.mean(T.neq(predictions, self.y))
-        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights)
+        error = T.mean(T.neq(predictions, self.y[:, np.newaxis]))
+        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights[:, np.newaxis, np.newaxis])
         return cost, error, predictions
 
     def compile_cost_function(self):
