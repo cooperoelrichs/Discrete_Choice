@@ -72,10 +72,11 @@ class TheanoMixedLogit(object):
         # P = T.nnet.softmax(V)
         e_V = T.exp(V - V.max(axis=1, keepdims=True))
         P = e_V / e_V.sum(axis=1, keepdims=True)
+        P = P.mean(axis=2)
 
         predictions = T.argmax(P, axis=1)
-        error = T.mean(T.neq(predictions, self.y[:, np.newaxis]))
-        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights[:, np.newaxis])
+        error = T.mean(T.neq(predictions, self.y))
+        cost = -T.mean(T.log(P)[T.arange(self.y.shape[0]), self.y] * self.weights)
         return cost, error, predictions
 
     def compile_cost_function(self):
@@ -99,7 +100,7 @@ class TheanoMixedLogit(object):
                                          self.parameters,
                                          self.weights],
                                         T.grad(self.cost, wrt=self.parameters),
-                                        name='gradient_function', on_unused_input='ignore')
+                                        name='gradient_function')  #, on_unused_input='ignore')
         return grad_function
 
 
