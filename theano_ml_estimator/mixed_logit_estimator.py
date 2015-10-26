@@ -89,6 +89,7 @@ class TheanoMixedLogit(object):
                                          self.parameters,
                                          self.weights],
                                         [self.cost, self.error, self.predictions],
+                                        no_default_updates=True,
                                         name='cost_function')  #, on_unused_input='ignore')  # , mode='DebugMode')
         return cost_function
 
@@ -101,6 +102,7 @@ class TheanoMixedLogit(object):
                                          self.parameters,
                                          self.weights],
                                         T.grad(self.cost, wrt=self.parameters),
+                                        no_default_updates=True,
                                         name='gradient_function')  #, on_unused_input='ignore')
         return grad_function
 
@@ -167,11 +169,22 @@ class MixedLogitEstimator(object):
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
-                                             gtol=0.0000001, disp=True)
+                                             gtol=0.00001,
+                                             maxiter=10,
+                                             callback=self.update_rng_states,
+                                             disp=True)
 
         # self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
+
+    def update_rng_states(self, params):
+        print('Updating state. Current params: ' + str(params))
+        rng = RandomStreams(seed=2341)
+        state_updates = zip(self.cost_function.rng.state_updates, self.gradient_function.rng.state_updates)
+        for ((cost_state, grad_state), update) in zip(state_updates, rng.updates):
+            cost_state[0].set_value(update)
+            grad_state[0].set_value(update)
 
     def extract_parameters(self, parameters):
         W = self.W_input
