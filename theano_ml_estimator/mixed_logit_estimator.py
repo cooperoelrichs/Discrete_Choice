@@ -165,7 +165,7 @@ class MixedLogitEstimator(object):
         return grad
 
     def estimate(self):
-        # self.gradient_check(self.cost, self.gradient, self.parameters)
+        self.gradient_check(self.cost, self.gradient, self.parameters)
         self.parameters = optimize.fmin_bfgs(self.cost,
                                              self.parameters,
                                              fprime=self.gradient,
@@ -174,7 +174,7 @@ class MixedLogitEstimator(object):
                                              callback=self.update_rng_states,
                                              disp=True)
 
-        # self.gradient_check(self.cost, self.gradient, self.parameters)
+        self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
 
@@ -197,6 +197,7 @@ class MixedLogitEstimator(object):
     @staticmethod
     def gradient_check(cost_function, gradient_function, parameters):
         grad_check = optimize.check_grad(cost_function, gradient_function, parameters)
-        if abs(grad_check) > 1 * 10**-4:
-            error = 'Gradient failed check with an error of ' + str(grad_check)
-            raise ValueError(error)
+        print('Gradient check: %f' % grad_check)
+        # if abs(grad_check) > 1 * 10**-4:
+        #     error = 'Gradient failed check with an error of ' + str(grad_check)
+        #     raise ValueError(error)
