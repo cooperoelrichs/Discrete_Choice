@@ -57,7 +57,7 @@ class TheanoMixedLogit(object):
 
         # Random draws
         num_draws = 1000
-        num_alternatives = T.max(self.y)
+        num_alternatives = 6
         num_observations = self.X.shape[0]
         dims = (num_observations, num_alternatives, num_draws)
         cost_draws = -T.log(-T.log(srng.uniform(dims)))
@@ -65,8 +65,9 @@ class TheanoMixedLogit(object):
 
         # V = b + w_cost * cost + w_random_cost * cost_draw * cost + w_random_error * error_draw
         V = T.dot(self.X, W) + b
-        V_rp = (T.dot(self.X, W_rp)[:, :, np.newaxis] * cost_draws +
-                (b_rp[:, np.newaxis, np.newaxis] * bias_draws))
+        V_rp_cost = T.dot(self.X, W_rp)[:, :, np.newaxis] * cost_draws
+        V_rp_bias = b_rp[np.newaxis, :, np.newaxis] * bias_draws
+        V_rp = (V_rp_cost + V_rp_bias)
 
         V = V[:, :, np.newaxis] + V_rp
         # P = T.nnet.softmax(V)
