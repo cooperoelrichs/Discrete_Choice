@@ -48,7 +48,6 @@ class TheanoMixedLogit(object):
         self.gradient_function = self.compile_gradient_function()
 
     def multinomial_logit_cost(self):
-        # I HATE UTILITY FUNCTIONS
         W = T.set_subtensor(self.W_input[(self.costs[:, 0], self.costs[:, 1])],
                             self.parameters[self.costs[:, 2]])
         b = T.set_subtensor(self.b_input[self.biases[:, 0]], self.parameters[self.biases[:, 1]])
@@ -58,8 +57,11 @@ class TheanoMixedLogit(object):
         b_rp = T.set_subtensor(self.b_rp_input[self.rp_biases[:, 0]], self.parameters[self.rp_biases[:, 1]])
 
         # V = b + w_cost * cost + w_random_cost * cost_draw * cost + w_random_error * error_draw
+        # V_rp_cost[14000, 6, 1000] = f(X[14000, costs], W_rp[costs, 6], draws[random_params, 1000])
+
         V = T.dot(self.X, W) + b
-        V_rp_cost = T.dot(self.X, W_rp)[:, :, np.newaxis] * self.cost_draws
+        W_rp_draws = W_rp[:, :, np.newaxis] * self.cost_draws
+        V_rp_cost = T.dot(self.X, W_rp_draws)
         V_rp_bias = b_rp[np.newaxis, :, np.newaxis] * self.bias_draws
         V_rp = (V_rp_cost + V_rp_bias)
 

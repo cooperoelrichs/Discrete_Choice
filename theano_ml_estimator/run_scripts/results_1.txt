@@ -1,0 +1,74 @@
+Original data shape: (14271, 32)
+Current data shape: (14013, 32)
+Current X data shape: (14013, 12)
+Unique y values: [0 1 2 3 4 5]
+Gradient error: 0.002346
+Starting estimation. Elapsed time: 77s
+Updating draws. Current iter: 1. Iter time: 329s
+Updating draws. Current iter: 2. Iter time: 21s
+Updating draws. Current iter: 3. Iter time: 33s
+Updating draws. Current iter: 4. Iter time: 21s
+Updating draws. Current iter: 5. Iter time: 40s
+Updating draws. Current iter: 6. Iter time: 33s
+Updating draws. Current iter: 7. Iter time: 21s
+Updating draws. Current iter: 8. Iter time: 30s
+Updating draws. Current iter: 9. Iter time: 34s
+Updating draws. Current iter: 10. Iter time: 24s
+Updating draws. Current iter: 11. Iter time: 31s
+Updating draws. Current iter: 12. Iter time: 21s
+Updating draws. Current iter: 13. Iter time: 64s
+Updating draws. Current iter: 14. Iter time: 32s
+Updating draws. Current iter: 15. Iter time: 30s
+Updating draws. Current iter: 16. Iter time: 21s
+Updating draws. Current iter: 17. Iter time: 21s
+Updating draws. Current iter: 18. Iter time: 32s
+Updating draws. Current iter: 19. Iter time: 25s
+Updating draws. Current iter: 20. Iter time: 25s
+Updating draws. Current iter: 21. Iter time: 25s
+Updating draws. Current iter: 22. Iter time: 26s
+Updating draws. Current iter: 23. Iter time: 24s
+Updating draws. Current iter: 24. Iter time: 23s
+Updating draws. Current iter: 25. Iter time: 24s
+Updating draws. Current iter: 26. Iter time: 23s
+Updating draws. Current iter: 27. Iter time: 24s
+Updating draws. Current iter: 28. Iter time: 25s
+Updating draws. Current iter: 29. Iter time: 25s
+Updating draws. Current iter: 30. Iter time: 36s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 88.148740
+         Iterations: 30
+         Function evaluations: 103
+         Gradient evaluations: 81
+Gradient error: 0.000192
+b_bicycle: -2.75
+b_car: -0.99
+b_pt1: -4.54
+b_pt2: 0.86
+b_pt3: 6.54
+cost_bicycle: -0.71
+cost_car: -0.92
+cost_pt1: -1.14
+cost_pt2: -0.55
+cost_pt3: -0.99
+cost_walk: -0.62
+error_bicycle: -0.11
+error_car: 0.18
+error_pt1: -0.78
+error_pt2: -0.02
+error_pt3: 0.13
+error_walk: 0.01
+random_cost_bicycle: -1.41
+random_cost_car: 0.07
+random_cost_pt1: -1.59
+random_cost_pt2: -0.72
+random_cost_pt3: 0.57
+random_cost_walk: 2.02
+Gradient is: [ 0.13901393 -0.22149202 -0.05323715  0.07584194  0.04967569  1.41428715
+  0.09039443 -1.51947537 -0.03882877  1.46771728  0.66359842 -0.73421448
+  0.68612779  0.893637    1.12487861  2.8718217   0.46718076 -0.04769232
+ -0.11652381 -0.04012735 -0.04809705  0.07676811  0.11705725]
+Estimate time: 1371.99
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 88.23
+Accuracy is: 0.80

@@ -40,14 +40,13 @@ X, y = dl.get_X_and_y()
 num_alternatives = 6
 X /= 100  # scale the costs and travel times
 
-input_parameters = np.zeros(11 + 12)  # np.random.randn(14).astype(float_dtype)
+input_parameters = np.zeros(11 + 9)  # np.random.randn(14).astype(float_dtype)
 
 parameter_names = [
     'b_bicycle', 'b_car', 'b_pt1', 'b_pt2', 'b_pt3',
     'cost_bicycle', 'cost_car', 'cost_pt1', 'cost_pt2', 'cost_pt3', 'cost_walk',
-    'error_bicycle', 'error_car', 'error_pt1', 'error_pt2', 'error_pt3', 'error_walk',
-    'random_cost_bicycle', 'random_cost_car', 'random_cost_pt1', 'random_cost_pt2',
-    'random_cost_pt3', 'random_cost_walk',
+    'random_cost_pt', 'random_cost_walk', 'random_cost_car', 'random_cost_bike',
+    'error_pt', 'error_car', 'error_non_mech', 'error_bike', 'error_pt_kiss_access',
 ]
 
 biases = np.array([[0, 0], [1, 1], [2, 2], [3, 3], [4, 4]], dtype=int_dtype)
@@ -61,14 +60,24 @@ cost_params = np.array(
     dtype=int_dtype
 )
 
-random_error_params = np.array([[0, 17], [1, 18], [2, 19], [3, 20], [4, 21], [5, 22]], dtype=int_dtype)
+random_error_params = np.array(
+    [[2, 15],
+     [3, 15],
+     [4, 15],
+     [1, 16],
+     [0, 17],
+     [5, 17],
+     [0, 18],
+     [4, 19],
+     ], dtype=int_dtype)
 random_cost_params = np.array(
-    [[0, 0, 11], [1, 0, 11],  # (feature, alternative, parameter)
-     [2, 1, 12], [3, 1, 12],
-     [4, 2, 13], [5, 2, 13],
-     [6, 3, 14], [7, 3, 14],
-     [8, 4, 15], [9, 4, 15],
-     [10, 5, 16], [11, 5, 16]],
+    [[4, 2, 11], [5, 2, 11],
+     [6, 3, 11], [7, 3, 11],
+     [8, 4, 11], [9, 4, 11],
+     [10, 5, 12], [11, 5, 12],
+     [2, 1, 13], [3, 1, 13],
+     [0, 0, 14], [1, 0, 14],
+     ],
     dtype=int_dtype
 )
 

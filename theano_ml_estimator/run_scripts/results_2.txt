@@ -1,0 +1,44 @@
+Original data shape: (14271, 32)
+Current data shape: (14013, 32)
+Current X data shape: (14013, 12)
+Unique y values: [0 1 2 3 4 5]
+Gradient error: 11.275935
+Starting estimation. Elapsed time: 76s
+Updating draws. Current iter: 1. Iter time: 391s
+Updating draws. Current iter: 2. Iter time: 22s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 178.936416
+         Iterations: 2
+         Function evaluations: 81
+         Gradient evaluations: 64
+Gradient error: 1.977301
+b_bicycle: -0.17
+b_car: 0.84
+b_pt1: -0.23
+b_pt2: -0.18
+b_pt3: -0.07
+cost_bicycle: -3.22
+cost_car: 6.20
+cost_pt1: -7.12
+cost_pt2: -5.22
+cost_pt3: -3.54
+cost_walk: -15.72
+random_cost_pt: -9.07
+random_cost_walk: -9.47
+random_cost_car: 4.02
+random_cost_bike: -2.38
+error_pt: -0.27
+error_car: 0.50
+error_non_mech: -0.22
+error_bike: -0.10
+error_pt_kiss_access: -0.04
+Gradient is: [ -2.88562086e+00   3.86557445e+00   9.82630893e-02   9.45070642e-02
+  -1.45845982e-03  -1.97040684e+01   1.65622401e+01   1.98842194e+00
+   2.11882233e+00   1.02404097e+00  -8.40481538e+00  -2.72019176e+00
+   1.48380610e+01  -1.94716854e+01   2.43117070e+01   6.25776584e-02
+   1.51036365e+00  -2.71019108e+00  -1.97724618e+00  -3.28157246e-03]
+Estimate time: 856.95
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 178.73
+Accuracy is: 0.79
