@@ -67,8 +67,8 @@ random_error_params = np.array(
      [1, 16],
      [0, 17],
      [5, 17],
-     [0, 18],
-     [4, 19],
+     # [0, 18],
+     # [4, 19],
      ], dtype=int_dtype)
 random_cost_params = np.array(
     [[4, 2, 11], [5, 2, 11],

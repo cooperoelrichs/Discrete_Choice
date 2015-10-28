@@ -15,8 +15,8 @@ import time
 class TheanoMixedLogit(object):
     def __init__(self):
         np.seterr(all='raise')
-        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        # theano.config.exception_verbosity = 'high'  # More traceable errors
+        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
         # theano.config.profile = True
         # theano.config.profile_memory = True
@@ -57,7 +57,14 @@ class TheanoMixedLogit(object):
         b_rp = T.set_subtensor(self.b_rp_input[self.rp_biases[:, 0]], self.parameters[self.rp_biases[:, 1]])
 
         # V = b + w_cost * cost + w_random_cost * cost_draw * cost + w_random_error * error_draw
-        # V_rp_cost[14000, 6, 1000] = f(X[14000, costs], W_rp[costs, 6], draws[random_params, 1000])
+        # V_rp_cost[14000, 6, 1000] = f(X[14000, costs], W_rp[costs, 6], draws[14000, random_cost_params, 1000])
+        # V_rb_bias[14000, 6, 1000] = f(b_rp[6], draws[14000, random_error_params, 1000])
+
+
+        # Something like this...
+        # V[exps, alt, draws] = f(X[exps, features], W[exps, features, alts, num_draws])
+        # W[exps, features, alts, num_draws] = g(drawn_params[exps, num_params, num_draws], shaper[alts, features])
+        # drawn_params[exps, num_params, num_draws] = h(random_params[num_params], draws[exps, num_params, num_draws])
 
         V = T.dot(self.X, W) + b
         W_rp_draws = W_rp[:, :, np.newaxis] * self.cost_draws
@@ -113,17 +120,17 @@ class MixedLogitEstimator(object):
         self.iter = 0
         self.last_time = time.clock()
 
-        # Random draws
-        self.num_draws = 1000
-        self.num_observations = self.X.shape[0]
-        self.num_alternatives = num_alternatives
-        self.cost_draws, self.bias_draws = self.generate_random_draws()
-
         # Input params
         self.W_input = W_input
         self.b_input = b_input
         self.W_rp_input = W_rb_input
         self.b_rp_input = b_rp_input
+
+        # Random draws
+        self.num_draws = 1000
+        self.num_observations = self.X.shape[0]
+        self.num_alternatives = num_alternatives
+        self.cost_draws, self.bias_draws = self.generate_random_draws()
 
         self.parameters = parameters
         self.cost_params = costs_params
@@ -140,8 +147,8 @@ class MixedLogitEstimator(object):
         self.gradient_function = tml.gradient_function
 
     def generate_random_draws(self):
-        cost_draws = -np.log(-np.log(np.random.rand(self.num_observations, self.num_alternatives, self.num_draws)))
-        bias_draws = -np.log(-np.log(np.random.rand(self.num_observations, self.num_alternatives, self.num_draws)))
+        cost_draws = -np.log(-np.log(np.random.rand(self.num_observations, self.W_rp_input.shape[0], self.num_draws)))
+        bias_draws = -np.log(-np.log(np.random.rand(self.num_observations, self.b_rp_input.shape[0], self.num_draws)))
         return cost_draws, bias_draws
 
     def cost(self, parameters):
