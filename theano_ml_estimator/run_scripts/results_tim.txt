@@ -1,0 +1,79 @@
+λ ruby do_it.rb
+Wed Oct 28 16:54:46 +1000 2015
+0.001
+Mean (last 1) after 0 log likelihood: -0.083696141212816
+Mean so far: -0.083696141212816
+Mean (last 1000) after 1000 log likelihood: -0.541955547003442
+Mean so far: -0.541497745399256
+Mean (last 1000) after 2000 log likelihood: -0.526885121822392
+Mean so far: -0.534195084941054
+Mean (last 1000) after 3000 log likelihood: -0.498395908641827
+Mean so far: -0.522266002535447
+Mean (last 1000) after 4000 log likelihood: -0.492489219995472
+Mean so far: -0.514823667484217
+Mean (last 1000) after 5000 log likelihood: -0.54386577877195
+Mean so far: -0.520630928289604
+Mean (last 1000) after 6000 log likelihood: -0.558701913373362
+Mean so far: -0.526975035119093
+Mean (last 1000) after 7000 log likelihood: -0.535039131821515
+Mean so far: -0.528126884383829
+Mean (last 1000) after 8000 log likelihood: -0.48840785717272
+Mean so far: -0.523162626514674
+Mean (last 1000) after 9000 log likelihood: -0.494662376396854
+Mean so far: -0.519996283872988
+Mean (last 1000) after 10000 log likelihood: -0.510055288171504
+Mean so far: -0.519002283702857
+Mean (last 1000) after 11000 log likelihood: -0.510399271107794
+Mean so far: -0.518220262741576
+Mean (last 1000) after 12000 log likelihood: -0.565092570559353
+Mean so far: -0.522125962918043
+Mean (last 1000) after 13000 log likelihood: -0.533228439654066
+Mean so far: -0.522979933899969
+Mean (last 1000) after 14000 log likelihood: -0.536945899282946
+Mean so far: -0.523977431606059
+Mean (last 1000) after 15000 log likelihood: -0.53328640816262
+Mean so far: -0.524597988672692
+Mean (last 1000) after 16000 log likelihood: -0.515228056816381
+Mean so far: -0.524012404530682
+Mean (last 1000) after 17000 log likelihood: -0.484447856101997
+Mean so far: -0.521685215046024
+Mean (last 1000) after 18000 log likelihood: -0.55126465394816
+Mean so far: -0.523328425917761
+Mean (last 1000) after 19000 log likelihood: -0.48778709437987
+Mean so far: -0.521457927968293
+Mean (last 1000) after 20000 log likelihood: -0.515359105242735
+Mean so far: -0.521153002078308
+Mean (last 1000) after 21000 log likelihood: -0.538728909720943
+Mean so far: -0.521989910208523
+Mean (last 1000) after 22000 log likelihood: -0.495944578126509
+Mean so far: -0.520806085287745
+Mean (last 1000) after 23000 log likelihood: -0.507107702364077
+Mean so far: -0.520210529315235
+Mean (last 1000) after 24000 log likelihood: -0.473659489703582
+Mean so far: -0.518270983479159
+Mean (last 1000) after 25000 log likelihood: -0.492947673231797
+Mean so far: -0.517258091584942
+Wed Oct 28 19:40:10 +1000 2015
+9923.829469
+Param CarCost => -0.386868015980416
+Param WalkCost => -0.281855824988261
+Param PtCost => -0.268335651916943
+Param BikeCost => -0.387403515999538
+Param PTWA_Const => 0.972164267992685
+Param PTPA_Const => -0.49978382092916
+Param PTKA_Const => -1.73459333845877
+Param Car_Const => 0.7803634076347
+Param Bike_Const => -2.44870883153347
+Param Car_0CarHH => -3.64298137987949
+Param Car_1CarHH => -1.3423226134291
+Param Car_CBDCore => -2.18494129533268
+Param Car_CBDNonCore => -1.17834636430063
+Param EC_PT => -0.504678015789985
+Param EC_Car => -0.110232820676599
+Param EC_NonMech => 0.411403919703687
+Param EC_Bike => -0.64769475594887
+Param RP_PtCost => -0.280659284081039
+Param RP_WalkCost => -0.104405475427009
+Param RP_CarCost => -0.167040249177148
+Param RP_BikeCost => -0.34356014311503
+Param EC_PTKA => -0.219010876810968
