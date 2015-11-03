@@ -42,11 +42,9 @@ class TheanoMixedLogit(object):
         # V_rp_cost[14000, 6, 1000] = f(X[14000, costs], W_rp[costs, 6], draws[14000, random_cost_params, 1000])
         # V_rb_bias[14000, 6, 1000] = f(b_rp[6], draws[14000, random_error_params, 1000])
 
-        V, _ = theano.scan(lambda fn, X_, parameters_, draws_: fn(X_, parameters_, draws_),
-                           sequences=self.utility_functions,
-                           outputs_info=T.tensor3('V', dtype=self.float_type),
-                           non_sequences=[self.X, self.parameters, self.draws],
-                           strict=True)
+        set_subtensor(V[0], self.utility_functions.bicycle(X, parameters, draws))
+        set_subtensor(V[1], self.utility_functions.car(X, parameters, draws))
+        set_subtensor(V[2], self.utility_functions.pt_walk_access(X, parameters, draws))
 
         # P = T.nnet.softmax(V)
         e_V = T.exp(V - V.max(axis=1, keepdims=True))

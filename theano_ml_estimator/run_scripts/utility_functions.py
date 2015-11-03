@@ -67,6 +67,7 @@ class UtilityFunctions(object):
         self.X = T.matrix('X', dtype=float_dtype)
         self.draws = T.tensor3('draws', dtype=float_dtype)
         self.parameters = T.vector('parameters', dtype=float_dtype)
+        self.input_parameters = np.zeros(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
 
     def bicycle(self):
         bias = self.parameters[parameter_map['bias_bicycle']]
