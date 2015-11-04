@@ -82,7 +82,7 @@ class MixedLogitEstimator(object):
         self.last_time = time.clock()
 
         # Random draws
-        self.num_draws = 200
+        self.num_draws = 1000
         self.num_observations = self.X.shape[0]
         self.num_alternatives = num_alternatives
 
