@@ -11,20 +11,39 @@ parameter_map = {
     'bias_pt_kiss_access': 4,
     'cost_bicycle': 5,
     'cost_car': 6,
-    'cost_pt_walk_access': 7,
-    'cost_pt_park_access': 8,
-    'cost_pt_kiss_access': 9,
-    'cost_walk': 10,
-    'random_cost_pt': 11,
-    'random_cost_walk': 12,
-    'random_cost_car': 13,
-    'random_cost_bicycle': 14,
-    'error_pt': 15,
-    'error_car': 16,
-    'error_non_mech': 17,
-    'error_bicycle': 18,
+    'cost_pt': 7,
+    'cost_walk': 8,
+    'random_cost_pt': 9,
+    'random_cost_walk': 10,
+    'random_cost_car': 11,
+    'random_cost_bicycle': 12,
+    'error_pt': 13,
+    'error_car': 14,
+    'error_non_mech': 15,
+    'error_bicycle': 16,
     # 'error_pt_kiss_access': 19,
 }
+
+parameter_names = [
+    'bias_bicycle',
+    'bias_car',
+    'bias_pt_walk_access',
+    'bias_pt_park_access',
+    'bias_pt_kiss_access',
+    'cost_bicycle',
+    'cost_car',
+    'cost_pt',
+    'cost_walk',
+    'random_cost_pt',
+    'random_cost_walk',
+    'random_cost_car',
+    'random_cost_bicycle',
+    'error_pt',
+    'error_car',
+    'error_non_mech',
+    'error_bicycle',
+    # 'error_pt_kiss_access': 19,
+]
 
 draw_map = {
     'random_cost_pt': 0,
@@ -68,12 +87,12 @@ class UtilityFunctions(object):
         
     def calculate_V(self, V, X, parameters, draws):
         # V[exps, alts, draws]
-        T.set_subtensor(V[:, 0, :], self.bicycle(X, parameters, draws))
-        T.set_subtensor(V[:, 1, :], self.car(X, parameters, draws))
-        T.set_subtensor(V[:, 2, :], self.pt_walk_access(X, parameters, draws))
-        T.set_subtensor(V[:, 3, :], self.pt_park_access(X, parameters, draws))
-        T.set_subtensor(V[:, 4, :], self.pt_kiss_access(X, parameters, draws))
-        T.set_subtensor(V[:, 5, :], self.walk(X, parameters, draws))
+        V = T.set_subtensor(V[:, 0, :], self.bicycle(X, parameters, draws))
+        V = T.set_subtensor(V[:, 1, :], self.car(X, parameters, draws))
+        V = T.set_subtensor(V[:, 2, :], self.pt_walk_access(X, parameters, draws))
+        V = T.set_subtensor(V[:, 3, :], self.pt_park_access(X, parameters, draws))
+        V = T.set_subtensor(V[:, 4, :], self.pt_kiss_access(X, parameters, draws))
+        V = T.set_subtensor(V[:, 5, :], self.walk(X, parameters, draws))
         return V
 
     def bicycle(self, X, parameters, draws):
@@ -107,8 +126,8 @@ class UtilityFunctions(object):
 
     def pt_walk_access(self, X, parameters, draws):
         bias = parameters[parameter_map['bias_pt_walk_access']]
-        cost = (X[:, feature_map['WAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_walk_access']] +
-                X[:, feature_map['WAWE_Cost_Return']] * parameters[parameter_map['cost_pt_walk_access']])
+        cost = (X[:, feature_map['WAWE_Cost_Outward']] * parameters[parameter_map['cost_pt']] +
+                X[:, feature_map['WAWE_Cost_Return']] * parameters[parameter_map['cost_pt']])
         error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
         random_cost = ((X[:, feature_map['WAWE_Cost_Outward']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
@@ -121,8 +140,8 @@ class UtilityFunctions(object):
 
     def pt_park_access(self, X, parameters, draws):
         bias = parameters[parameter_map['bias_pt_park_access']]
-        cost = (X[:, feature_map['PAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_park_access']] +
-                X[:, feature_map['WAPE_Cost_Return']] * parameters[parameter_map['cost_pt_park_access']])
+        cost = (X[:, feature_map['PAWE_Cost_Outward']] * parameters[parameter_map['cost_pt']] +
+                X[:, feature_map['WAPE_Cost_Return']] * parameters[parameter_map['cost_pt']])
         error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
         random_cost = ((X[:, feature_map['PAWE_Cost_Outward']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
@@ -135,8 +154,8 @@ class UtilityFunctions(object):
 
     def pt_kiss_access(self, X, parameters, draws):
         bias = parameters[parameter_map['bias_pt_kiss_access']]
-        cost = (X[:, feature_map['KAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_kiss_access']] +
-                X[:, feature_map['WAKE_Cost_Return']] * parameters[parameter_map['cost_pt_kiss_access']])
+        cost = (X[:, feature_map['KAWE_Cost_Outward']] * parameters[parameter_map['cost_pt']] +
+                X[:, feature_map['WAKE_Cost_Return']] * parameters[parameter_map['cost_pt']])
         error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
         random_cost = ((X[:, feature_map['KAWE_Cost_Outward']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *

@@ -58,11 +58,12 @@ final_grad = mle.gradient(output_parameters)
 # print(l)
 
 
-def print_params(params_, names_):
-    for i, x in enumerate(params_):
-        print('%s: %.2f' % (names_[i], x))
+def print_params(values, name_map, names):
+    for name in names:
+        print('%s: %.2f' % (name, values[name_map[name]]))
 
-print_params(output_parameters, parameter_names)
+from utility_functions import parameter_map, parameter_names
+print_params(output_parameters, parameter_map, parameter_names)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % initial_cost)

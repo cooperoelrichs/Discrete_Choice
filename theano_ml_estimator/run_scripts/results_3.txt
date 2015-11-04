@@ -1,0 +1,100 @@
+/usr/local/Cellar/python3/3.4.3/Frameworks/Python.framework/Versions/3.4/bin/python3.4 /Users/cooperoelrichs/Projects/Discrete_Choice/theano_ml_estimator/run_scripts/hww_melb_test.py
+Original data shape: (14271, 32)
+Current data shape: (14013, 32)
+Current X data shape: (14013, 12)
+Unique y values: [0 1 2 3 4 5]
+Gradient error: 0.002308
+Starting estimation. Elapsed time: 99s
+Updating draws. Current iter: 1. Iter time: 428s
+Updating draws. Current iter: 2. Iter time: 42s
+Updating draws. Current iter: 3. Iter time: 40s
+Updating draws. Current iter: 4. Iter time: 59s
+Updating draws. Current iter: 5. Iter time: 41s
+Updating draws. Current iter: 6. Iter time: 39s
+Updating draws. Current iter: 7. Iter time: 53s
+Updating draws. Current iter: 8. Iter time: 47s
+Updating draws. Current iter: 9. Iter time: 36s
+Updating draws. Current iter: 10. Iter time: 51s
+Updating draws. Current iter: 11. Iter time: 36s
+Updating draws. Current iter: 12. Iter time: 36s
+Updating draws. Current iter: 13. Iter time: 43s
+Updating draws. Current iter: 14. Iter time: 63s
+Updating draws. Current iter: 15. Iter time: 50s
+Updating draws. Current iter: 16. Iter time: 33s
+Updating draws. Current iter: 17. Iter time: 49s
+Updating draws. Current iter: 18. Iter time: 36s
+Updating draws. Current iter: 19. Iter time: 40s
+Updating draws. Current iter: 20. Iter time: 43s
+Updating draws. Current iter: 21. Iter time: 37s
+Updating draws. Current iter: 22. Iter time: 36s
+Updating draws. Current iter: 23. Iter time: 42s
+Updating draws. Current iter: 24. Iter time: 37s
+Updating draws. Current iter: 25. Iter time: 51s
+Updating draws. Current iter: 26. Iter time: 46s
+Updating draws. Current iter: 27. Iter time: 49s
+Updating draws. Current iter: 28. Iter time: 36s
+Updating draws. Current iter: 29. Iter time: 40s
+Updating draws. Current iter: 30. Iter time: 39s
+Updating draws. Current iter: 31. Iter time: 45s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 98.668894
+         Iterations: 31
+         Function evaluations: 97
+         Gradient evaluations: 77
+Gradient error: 0.000106
+bias_bicycle: -4.42
+bias_car: -1.61
+bias_pt_walk_access: -4.90
+bias_pt_park_access: -2.33
+bias_pt_kiss_access: 0.87
+cost_bicycle: -1.46
+cost_car: -0.36
+cost_pt_walk_access: -0.12
+cost_pt_park_access: -0.20
+cost_pt_kiss_access: -0.33
+cost_walk: -6.00
+random_cost_bicycle: -0.80
+random_cost_car: -0.00
+random_cost_pt: -0.03
+random_cost_walk: -4.49
+error_bicycle: -0.96
+error_car: -0.05
+error_pt: 0.04
+error_non_mech: 2.99
+
+
+Param Bike_Const => -2.44870883153347
+Param Car_Const => 0.7803634076347
+Param PTWA_Const => 0.972164267992685
+Param PTPA_Const => -0.49978382092916
+Param PTKA_Const => -1.73459333845877
+Param BikeCost => -0.387403515999538
+Param CarCost => -0.386868015980416
+Param PtCost => -0.268335651916943
+Param WalkCost => -0.281855824988261
+Param Car_0CarHH => -3.64298137987949
+Param Car_1CarHH => -1.3423226134291
+Param Car_CBDCore => -2.18494129533268
+Param Car_CBDNonCore => -1.17834636430063
+Param RP_BikeCost => -0.34356014311503
+Param RP_CarCost => -0.167040249177148
+Param RP_PtCost => -0.280659284081039
+Param RP_WalkCost => -0.104405475427009
+Param EC_PTKA => -0.219010876810968
+Param EC_Bike => -0.64769475594887
+Param EC_Car => -0.110232820676599
+Param EC_PT => -0.504678015789985
+Param EC_NonMech => 0.411403919703687
+
+
+Gradient is: [ 0.15232858  0.21975989 -0.24951066 -0.02512194  0.23336268 -0.60227476
+  1.04583188 -3.62254898 -3.90610636  6.07899416 -0.16906461 -1.33118099
+ -0.05801323  0.63524328  0.59073407  0.01033677  0.02004395 -0.10658324
+  0.03626684]
+Estimate time: 1988.14
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 98.79
+Accuracy is: 0.80
+
+Process finished with exit code 0
