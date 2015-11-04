@@ -80,12 +80,6 @@ class UtilityFunctions(object):
         bias = parameters[parameter_map['bias_bicycle']]
         cost = (X[:, feature_map['Bicycle_Cost_Outward']] * parameters[parameter_map['cost_bicycle']] +
                 X[:, feature_map['Bicycle_Cost_Return']] * parameters[parameter_map['cost_bicycle']])
-
-        parameters[parameter_map['error_bicycle']]
-        draws[:, draw_map['error_bicycle'], :]
-        parameters[parameter_map['error_non_mech']]
-        draws[:, draw_map['error_non_mech'], :]
-
         error = (parameters[parameter_map['error_bicycle']] * draws[:, draw_map['error_bicycle'], :] +
                  parameters[parameter_map['error_non_mech']] * draws[:, draw_map['error_non_mech'], :])
         random_cost = ((X[:, feature_map['Bicycle_Cost_Outward']] *
