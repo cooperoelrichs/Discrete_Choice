@@ -41,9 +41,10 @@ X, y = dl.get_X_and_y()
 num_alternatives = 6
 X /= 100  # scale the costs and travel times
 
-input_parameters = UtilityFunctions.input_parameters
+uf = UtilityFunctions()
+input_parameters = uf.input_parameters
 
-mle = MixedLogitEstimator(X, y, input_parameters, UtilityFunctions, weights, num_alternatives)
+mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives)
 initial_cost, initial_error, _ = mle.results(input_parameters)
 
 start_time = time.clock()

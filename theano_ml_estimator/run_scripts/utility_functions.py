@@ -54,123 +54,114 @@ feature_map = {
 }
 
 # X[exps, features]
-# draws[exps, biases_rp + self.parametersrp, draws]
+# draws[exps, biases_rp + parameters_rp, draws]
 # biases[biases]
 # parameters[parameters]
 # biases_rp[biases_rp]
-# self.parametersrp[self.parametersrp]
+# parameters_rp[parameters_rp]
 # return[exps, draws]
 
 
 class UtilityFunctions(object):
-    def __init__(self, float_dtype):
-        self.X = T.matrix('X', dtype=float_dtype)
-        self.draws = T.tensor3('draws', dtype=float_dtype)
-        self.parameters = T.vector('parameters', dtype=float_dtype)
+    def __init__(self):
         self.input_parameters = np.zeros(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
+        
+    def calculate_V(self, V, X, parameters, draws):
+        # V[exps, alts, draws]
+        T.set_subtensor(V[:, 0, :], self.bicycle(X, parameters, draws))
+        T.set_subtensor(V[:, 1, :], self.car(X, parameters, draws))
+        T.set_subtensor(V[:, 2, :], self.pt_walk_access(X, parameters, draws))
+        T.set_subtensor(V[:, 3, :], self.pt_park_access(X, parameters, draws))
+        T.set_subtensor(V[:, 4, :], self.pt_kiss_access(X, parameters, draws))
+        T.set_subtensor(V[:, 5, :], self.walk(X, parameters, draws))
+        return V
 
-    def bicycle(self):
-        bias = self.parameters[parameter_map['bias_bicycle']]
-        cost = (self.X[:, feature_map['Bicycle_Cost_Outward']] * self.parameters[parameter_map['cost_bicycle']] +
-                self.X[:, feature_map['Bicycle_Cost_Return']] * self.parameters[parameter_map['cost_bicycle']])
-        error = (self.parameters[parameter_map['error_bicycle']] * self.draws[:, draw_map['error_bicycle'], :] +
-                 self.parameters[parameter_map['error_non_mech']] * self.draws[:, draw_map['error_non_mech'], :])
-        random_cost = ((self.X[:, feature_map['Bicycle_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_bicycle']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_bicycle'], :] +
-                       (self.X[:, feature_map['Bicycle_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_bicycle']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_bicycle'], :])
+    def bicycle(self, X, parameters, draws):
+        bias = parameters[parameter_map['bias_bicycle']]
+        cost = (X[:, feature_map['Bicycle_Cost_Outward']] * parameters[parameter_map['cost_bicycle']] +
+                X[:, feature_map['Bicycle_Cost_Return']] * parameters[parameter_map['cost_bicycle']])
 
-        utility = bias + cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='bicycle_utility')
-        return fn
+        parameters[parameter_map['error_bicycle']]
+        draws[:, draw_map['error_bicycle'], :]
+        parameters[parameter_map['error_non_mech']]
+        draws[:, draw_map['error_non_mech'], :]
 
-    def car(self):
-        bias = self.parameters[parameter_map['bias_car']]
-        cost = (self.X[:, feature_map['Car_Cost_Outward']] * self.parameters[parameter_map['cost_car']] +
-                self.X[:, feature_map['Car_Cost_Return']] * self.parameters[parameter_map['cost_car']])
-        error = self.parameters[parameter_map['error_car']] * self.draws[:, draw_map['error_car'], :]
-        random_cost = ((self.X[:, feature_map['Car_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_car']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_car'], :] +
-                       (self.X[:, feature_map['Car_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_car']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_car'], :])
+        error = (parameters[parameter_map['error_bicycle']] * draws[:, draw_map['error_bicycle'], :] +
+                 parameters[parameter_map['error_non_mech']] * draws[:, draw_map['error_non_mech'], :])
+        random_cost = ((X[:, feature_map['Bicycle_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_bicycle']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_bicycle'], :] +
+                       (X[:, feature_map['Bicycle_Cost_Return']] *
+                        parameters[parameter_map['random_cost_bicycle']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_bicycle'], :])
 
-        utility = bias + cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='car_utility')
-        return fn
+        return bias + cost[:, np.newaxis] + random_cost + error
 
-    def pt_walk_access(self):
-        bias = self.parameters[parameter_map['bias_pt_walk_access']]
-        cost = (self.X[:, feature_map['WAWE_Cost_Outward']] * self.parameters[parameter_map['cost_pt_walk_access']] +
-                self.X[:, feature_map['WAWE_Cost_Return']] * self.parameters[parameter_map['cost_pt_walk_access']])
-        error = self.parameters[parameter_map['error_pt']] * self.draws[:, draw_map['error_pt'], :]
-        random_cost = ((self.X[:, feature_map['WAWE_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :] +
-                       (self.X[:, feature_map['WAWE_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :])
+    def car(self, X, parameters, draws):
+        bias = parameters[parameter_map['bias_car']]
+        cost = (X[:, feature_map['Car_Cost_Outward']] * parameters[parameter_map['cost_car']] +
+                X[:, feature_map['Car_Cost_Return']] * parameters[parameter_map['cost_car']])
+        error = parameters[parameter_map['error_car']] * draws[:, draw_map['error_car'], :]
+        random_cost = ((X[:, feature_map['Car_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_car']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_car'], :] +
+                       (X[:, feature_map['Car_Cost_Return']] *
+                        parameters[parameter_map['random_cost_car']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_car'], :])
 
-        utility = bias + cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='pt_walk_access_utility')
-        return fn
+        return bias + cost[:, np.newaxis] + random_cost + error
 
-    def pt_park_access(self):
-        bias = self.parameters[parameter_map['bias_pt_park_access']]
-        cost = (self.X[:, feature_map['PAWE_Cost_Outward']] * self.parameters[parameter_map['cost_pt_park_access']] +
-                self.X[:, feature_map['WAPE_Cost_Return']] * self.parameters[parameter_map['cost_pt_park_access']])
-        error = self.parameters[parameter_map['error_pt']] * self.draws[:, draw_map['error_pt'], :]
-        random_cost = ((self.X[:, feature_map['PAWE_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :] +
-                       (self.X[:, feature_map['WAPE_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :])
+    def pt_walk_access(self, X, parameters, draws):
+        bias = parameters[parameter_map['bias_pt_walk_access']]
+        cost = (X[:, feature_map['WAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_walk_access']] +
+                X[:, feature_map['WAWE_Cost_Return']] * parameters[parameter_map['cost_pt_walk_access']])
+        error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
+        random_cost = ((X[:, feature_map['WAWE_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :] +
+                       (X[:, feature_map['WAWE_Cost_Return']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :])
 
-        utility = bias + cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='pt_park_access_utility')
-        return fn
+        return bias + cost[:, np.newaxis] + random_cost + error
 
-    def pt_kiss_access(self):
-        bias = self.parameters[parameter_map['bias_pt_kiss_access']]
-        cost = (self.X[:, feature_map['KAWE_Cost_Outward']] * self.parameters[parameter_map['cost_pt_kiss_access']] +
-                self.X[:, feature_map['WAKE_Cost_Return']] * self.parameters[parameter_map['cost_pt_kiss_access']])
-        error = self.parameters[parameter_map['error_pt']] * self.draws[:, draw_map['error_pt'], :]
-        random_cost = ((self.X[:, feature_map['KAWE_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :] +
-                       (self.X[:, feature_map['WAKE_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_pt'], :])
+    def pt_park_access(self, X, parameters, draws):
+        bias = parameters[parameter_map['bias_pt_park_access']]
+        cost = (X[:, feature_map['PAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_park_access']] +
+                X[:, feature_map['WAPE_Cost_Return']] * parameters[parameter_map['cost_pt_park_access']])
+        error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
+        random_cost = ((X[:, feature_map['PAWE_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :] +
+                       (X[:, feature_map['WAPE_Cost_Return']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :])
 
-        utility = bias + cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='pt_kiss_access_utility')
-        return fn
+        return bias + cost[:, np.newaxis] + random_cost + error
 
-    def walk(self):
-        cost = (self.X[:, feature_map['Walk_Cost_Outward']] * self.parameters[parameter_map['cost_walk']] +
-                self.X[:, feature_map['Walk_Cost_Return']] * self.parameters[parameter_map['cost_walk']])
-        error = self.parameters[parameter_map['error_non_mech']] * self.draws[:, draw_map['error_non_mech'], :]
-        random_cost = ((self.X[:, feature_map['Walk_Cost_Outward']] *
-                        self.parameters[parameter_map['random_cost_walk']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_walk'], :] +
-                       (self.X[:, feature_map['Walk_Cost_Return']] *
-                        self.parameters[parameter_map['random_cost_walk']])[:, np.newaxis] *
-                       self.draws[:, draw_map['random_cost_walk'], :])
+    def pt_kiss_access(self, X, parameters, draws):
+        bias = parameters[parameter_map['bias_pt_kiss_access']]
+        cost = (X[:, feature_map['KAWE_Cost_Outward']] * parameters[parameter_map['cost_pt_kiss_access']] +
+                X[:, feature_map['WAKE_Cost_Return']] * parameters[parameter_map['cost_pt_kiss_access']])
+        error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
+        random_cost = ((X[:, feature_map['KAWE_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :] +
+                       (X[:, feature_map['WAKE_Cost_Return']] *
+                        parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_pt'], :])
 
-        utility = cost[:, np.newaxis] + random_cost + error
-        fn = theano.function([self.X, self.parameters, self.draws], utility, name='walk_utility')
-        return fn
-    
-    def fn_list(self):
-        return [
-            self.bicycle(),
-            self.car(),
-            self.pt_walk_access(),
-            self.pt_park_access(),
-            self.pt_kiss_access(),
-            self.walk(),
-        ]
+        return bias + cost[:, np.newaxis] + random_cost + error
+
+    def walk(self, X, parameters, draws):
+        cost = (X[:, feature_map['Walk_Cost_Outward']] * parameters[parameter_map['cost_walk']] +
+                X[:, feature_map['Walk_Cost_Return']] * parameters[parameter_map['cost_walk']])
+        error = parameters[parameter_map['error_non_mech']] * draws[:, draw_map['error_non_mech'], :]
+        random_cost = ((X[:, feature_map['Walk_Cost_Outward']] *
+                        parameters[parameter_map['random_cost_walk']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_walk'], :] +
+                       (X[:, feature_map['Walk_Cost_Return']] *
+                        parameters[parameter_map['random_cost_walk']])[:, np.newaxis] *
+                       draws[:, draw_map['random_cost_walk'], :])
+
+        return cost[:, np.newaxis] + random_cost + error
