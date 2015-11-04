@@ -15,8 +15,8 @@ import time
 class TheanoMixedLogit(object):
     def __init__(self, utility_functions):
         np.seterr(all='raise')
-        theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
-        theano.config.exception_verbosity = 'high'  # More traceable errors
+        # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
+        # theano.config.exception_verbosity = 'high'  # More traceable errors
         # theano.config.compute_test_value = 'raise'
         # theano.config.profile = True
         # theano.config.profile_memory = True
@@ -53,6 +53,7 @@ class TheanoMixedLogit(object):
 
     def compile_cost_function(self):
         cost_function = theano.function([self.X, self.y,
+                                         self.V,
                                          self.draws,
                                          self.parameters,
                                          self.weights],
@@ -63,6 +64,7 @@ class TheanoMixedLogit(object):
 
     def compile_gradient_function(self):
         grad_function = theano.function([self.X, self.y,
+                                         self.V,
                                          self.draws,
                                          self.parameters,
                                          self.weights],
@@ -84,6 +86,7 @@ class MixedLogitEstimator(object):
         self.num_observations = self.X.shape[0]
         self.num_alternatives = num_alternatives
 
+        self.V = np.zeros((X.shape[0], num_alternatives, self.num_draws))
         self.parameters = parameters
         self.utility_functions = utility_functions
 
@@ -111,6 +114,7 @@ class MixedLogitEstimator(object):
     def results(self, parameters):
         parameters = self.maybe_fix_dtype(parameters)
         cost, error, predictions = self.cost_function(self.X, self.y,
+                                                      self.V,
                                                       self.draws,
                                                       parameters,
                                                       self.weights)
@@ -119,6 +123,7 @@ class MixedLogitEstimator(object):
     def gradient(self, parameters):
         parameters = self.maybe_fix_dtype(parameters)
         grad = self.gradient_function(self.X, self.y,
+                                      self.V,
                                       self.draws,
                                       parameters,
                                       self.weights)
@@ -141,12 +146,12 @@ class MixedLogitEstimator(object):
         cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
 
-    def update_random_draws(self):
+    def update_random_draws(self, _):
         elapsed_time = self.get_elapsed_time_and_reset_timer()
         print('Updating draws. Current iter: %i. Iter time: %.0fs' % (self.iter, elapsed_time))
 
         self.iter += 1
-        self.cost_draws, self.bias_draws = self.generate_random_draws()
+        self.draws = self.generate_random_draws()
 
     def get_elapsed_time_and_reset_timer(self):
         current_time = time.clock()
