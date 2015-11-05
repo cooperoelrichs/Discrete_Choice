@@ -1,4 +1,4 @@
-λ ruby do_it.rb
+ruby do_it.rb
 Wed Oct 28 16:54:46 +1000 2015
 0.001
 Mean (last 1) after 0 log likelihood: -0.083696141212816

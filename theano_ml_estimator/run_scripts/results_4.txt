@@ -1,0 +1,66 @@
+/usr/local/Cellar/python3/3.4.3/Frameworks/Python.framework/Versions/3.4/bin/python3.4 /Users/cooper.oelrichs.work/Projects/Discrete_Choice/theano_ml_estimator/run_scripts/hww_melb_test.py
+Original data shape: (14271, 32)
+Current data shape: (14013, 32)
+Current X data shape: (14013, 12)
+Unique y values: [0 1 2 3 4 5]
+Gradient error: 0.002269
+Starting estimation. Elapsed time: 86s
+Updating draws. Current iter: 1. Iter time: 398s
+Updating draws. Current iter: 2. Iter time: 31s
+Updating draws. Current iter: 3. Iter time: 70s
+Updating draws. Current iter: 4. Iter time: 52s
+Updating draws. Current iter: 5. Iter time: 26s
+Updating draws. Current iter: 6. Iter time: 26s
+Updating draws. Current iter: 7. Iter time: 31s
+Updating draws. Current iter: 8. Iter time: 27s
+Updating draws. Current iter: 9. Iter time: 43s
+Updating draws. Current iter: 10. Iter time: 27s
+Updating draws. Current iter: 11. Iter time: 26s
+Updating draws. Current iter: 12. Iter time: 26s
+Updating draws. Current iter: 13. Iter time: 27s
+Updating draws. Current iter: 14. Iter time: 25s
+Updating draws. Current iter: 15. Iter time: 28s
+Updating draws. Current iter: 16. Iter time: 27s
+Updating draws. Current iter: 17. Iter time: 26s
+Updating draws. Current iter: 18. Iter time: 26s
+Updating draws. Current iter: 19. Iter time: 26s
+Updating draws. Current iter: 20. Iter time: 28s
+Updating draws. Current iter: 21. Iter time: 27s
+Updating draws. Current iter: 22. Iter time: 38s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 96.346910
+         Iterations: 22
+         Function evaluations: 86
+         Gradient evaluations: 64
+Gradient error: 0.000199
+
+bias_bicycle: -12.54
+bias_car: -5.78
+bias_pt_walk_access: -6.27
+bias_pt_park_access: -5.82
+bias_pt_kiss_access: -5.28
+cost_bicycle: -1.01
+cost_car: -0.32
+cost_pt: -0.21
+cost_walk: -1.43
+random_cost_pt: -0.03
+random_cost_walk: -0.55
+random_cost_car: 0.01
+random_cost_bicycle: -0.47
+error_pt: 0.05
+error_car: -0.02
+error_non_mech: 4.22
+error_bicycle: -0.25
+
+Gradient is: [  1.25143235e-03  -1.96229182e-01  -1.52830597e-02   5.79854655e-02
+   1.88129515e-01   4.77386003e-01  -2.98729754e+00   5.71244810e+00
+  -9.05306476e-01  -5.84668870e+00   9.69185202e-01   1.42226420e-01
+  -6.09261329e-01   2.95643404e-01  -1.54450195e-01  -1.88376322e-02
+   1.69379470e-03]
+Estimate time: 1279.18
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 96.48
+Accuracy is: 0.79
+
+Process finished with exit code 0

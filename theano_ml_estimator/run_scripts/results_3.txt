@@ -1,0 +1,87 @@
+/usr/local/Cellar/python3/3.4.3/Frameworks/Python.framework/Versions/3.4/bin/python3.4 /Users/cooper.oelrichs.work/Projects/Discrete_Choice/theano_ml_estimator/run_scripts/hww_melb_test.py
+Original data shape: (14271, 32)
+Current data shape: (14013, 32)
+Current X data shape: (14013, 12)
+Unique y values: [0 1 2 3 4 5]
+Gradient error: 0.002250
+Starting estimation. Elapsed time: 87s
+Updating draws. Current iter: 1. Iter time: 409s
+Updating draws. Current iter: 2. Iter time: 30s
+Updating draws. Current iter: 3. Iter time: 33s
+Updating draws. Current iter: 4. Iter time: 27s
+Updating draws. Current iter: 5. Iter time: 43s
+Updating draws. Current iter: 6. Iter time: 28s
+Updating draws. Current iter: 7. Iter time: 44s
+Updating draws. Current iter: 8. Iter time: 28s
+Updating draws. Current iter: 9. Iter time: 27s
+Updating draws. Current iter: 10. Iter time: 29s
+Updating draws. Current iter: 11. Iter time: 36s
+Updating draws. Current iter: 12. Iter time: 36s
+Updating draws. Current iter: 13. Iter time: 50s
+Updating draws. Current iter: 14. Iter time: 30s
+Updating draws. Current iter: 15. Iter time: 33s
+Updating draws. Current iter: 16. Iter time: 32s
+Updating draws. Current iter: 17. Iter time: 33s
+Updating draws. Current iter: 18. Iter time: 34s
+Updating draws. Current iter: 19. Iter time: 33s
+Updating draws. Current iter: 20. Iter time: 33s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 96.859474
+         Iterations: 20
+         Function evaluations: 82
+         Gradient evaluations: 59
+Gradient error: 0.000200
+
+bias_bicycle: -2.37
+bias_car: -1.44
+bias_pt_walk_access: -1.84
+bias_pt_park_access: -1.48
+bias_pt_kiss_access: -0.93
+cost_bicycle: -1.81
+cost_car: -0.33
+cost_pt: -0.21
+cost_walk: -0.52
+random_cost_pt: -0.03
+random_cost_walk: -0.12
+random_cost_car: 0.01
+random_cost_bicycle: -1.14
+error_pt: -0.07
+error_car: 0.03
+error_non_mech: 2.04
+error_bicycle: -0.26
+
+Param Bike_Const => -2.45
+Param Car_Const => 0.78
+Param PTWA_Const => 0.97
+Param PTPA_Const => -0.50
+Param PTKA_Const => -1.73
+Param BikeCost => -0.39
+Param CarCost => -0.39
+Param PtCost => -0.27
+Param WalkCost => -0.28
+Param RP_BikeCost => -0.34
+Param RP_CarCost => -0.17
+Param RP_PtCost => -0.28
+Param RP_WalkCost => -0.10
+Param EC_Bike => -0.65
+Param EC_Car => -0.11
+Param EC_PT => -0.50
+Param EC_NonMech => 0.41
+
+Param Car_0CarHH => -3.64
+Param Car_1CarHH => -1.34
+Param Car_CBDCore => -2.18
+Param Car_CBDNonCore => -1.18
+Param EC_PTKA => -0.22
+
+Gradient is: [ -0.01738886  -0.42594038   0.2102612    0.01907979   0.14767364
+   0.15739081  -5.9236341   10.22635849   2.52183441  -0.87492844
+  -1.72355768  -1.51182679  -0.7360716    0.0348612   -0.16577226
+   0.11709499  -0.01088633]
+Estimate time: 1313.66
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 96.92
+Accuracy is: 0.79
+
+Process finished with exit code 0
