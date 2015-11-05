@@ -3,7 +3,7 @@ from scipy import optimize
 import theano
 import theano.typed_list
 import theano.tensor as T
-from theano.tensor.shared_randomstreams import RandomStreams
+# from theano.tensor.shared_randomstreams import RandomStreams
 import time
 
 # from sklearn.preprocessing import LabelBinarizer
@@ -22,7 +22,7 @@ class TheanoMixedLogit(object):
         # theano.config.profile_memory = True
 
         self.float_type = 'floatX'
-        int_type = 'int64'
+        int_type = 'int32'
 
         self.utility_functions = utility_functions
 
@@ -82,11 +82,11 @@ class MixedLogitEstimator(object):
         self.last_time = time.clock()
 
         # Random draws
-        self.num_draws = 1000
+        self.num_draws = 10000
         self.num_observations = self.X.shape[0]
         self.num_alternatives = num_alternatives
 
-        self.V = np.zeros((X.shape[0], num_alternatives, self.num_draws))
+        self.V = np.zeros((X.shape[0], num_alternatives, self.num_draws), dtype=theano.config.floatX)
         self.parameters = parameters
         self.utility_functions = utility_functions
 
@@ -98,7 +98,12 @@ class MixedLogitEstimator(object):
         self.gradient_function = tml.gradient_function
 
     def generate_random_draws(self):
-        draws = -np.log(-np.log(np.random.rand(self.num_observations, len(self.parameters), self.num_draws)))
+        np.random.random_sample()
+        draws = -np.log(-np.log(
+            np.random.random_sample(
+                (self.num_observations, len(self.parameters), self.num_draws)
+            )
+        )).astype(theano.config.floatX)
         return draws
 
     def cost(self, parameters):
