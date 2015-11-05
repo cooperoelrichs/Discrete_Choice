@@ -16,7 +16,7 @@ theanorc_with_gpu = (
 theanorc_with_cpu = (
     "[global]\n"
     "device = cpu\n"
-    "floatX = float32\n"
+    "floatX = float64\n"
     "numpy.seterr_all = raise"
 )
 

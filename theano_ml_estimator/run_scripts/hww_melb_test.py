@@ -6,7 +6,7 @@ import time
 from utility_functions import UtilityFunctions
 
 float_dtype = theano.config.floatX
-int_dtype = 'int32'
+int_dtype = 'int64'
 np.seterr(all='raise')
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,

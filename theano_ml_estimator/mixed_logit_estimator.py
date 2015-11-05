@@ -22,7 +22,7 @@ class TheanoMixedLogit(object):
         # theano.config.profile_memory = True
 
         self.float_type = 'floatX'
-        int_type = 'int32'
+        int_type = 'int64'
 
         self.utility_functions = utility_functions
 
