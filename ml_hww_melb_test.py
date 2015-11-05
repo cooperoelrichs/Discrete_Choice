@@ -3,7 +3,7 @@ import theano
 from theano_ml_estimator.mixed_logit_estimator import MixedLogitEstimator
 from nl_data_loader.nl_data_loader import NLDataLoader
 import time
-from utility_functions import UtilityFunctions
+from theano_ml_estimator.utility_functions import UtilityFunctions
 
 float_dtype = theano.config.floatX
 int_dtype = 'int64'
@@ -25,7 +25,7 @@ cost_columns = [
     'Walk_Cost_Outward', 'Walk_Cost_Return',
 ]
 
-dl = NLDataLoader('../../data/HWW_Melbourne.dat', '\t', cost_columns, 'choice', float_dtype, int_dtype)
+dl = NLDataLoader('data/HWW_Melbourne.dat', '\t', cost_columns, 'choice', float_dtype, int_dtype)
 dl.data = dl.data[dl.get('Bicycle_av') != 0]
 dl.data = dl.data[dl.get('Car_av') != 0]
 dl.data = dl.data[dl.get('PT_Walk_Access_av') != 0]
