@@ -13,7 +13,7 @@ import time
 
 
 class TheanoMixedLogit(object):
-    def __init__(self, utility_functions):
+    def __init__(self, utility_functions, float_dtype, int_dtype):
         np.seterr(all='raise')
         # theano.config.optimizer = 'None'  # 'fast_compile'  # More traceable errors
         # theano.config.exception_verbosity = 'high'  # More traceable errors
@@ -21,18 +21,18 @@ class TheanoMixedLogit(object):
         # theano.config.profile = True
         # theano.config.profile_memory = True
 
-        self.float_type = 'floatX'
-        int_type = 'int64'
+        self.float_dtype = float_dtype
+        self.int_dtype = int_dtype
 
         self.utility_functions = utility_functions
 
-        self.V = T.tensor3('V', dtype=self.float_type)
-        self.X = T.matrix('X', dtype=self.float_type)
-        self.y = T.vector('y', dtype=int_type)
-        self.draws = T.tensor3('draws', dtype=self.float_type)
+        self.V = T.tensor3('V', dtype=self.float_dtype)
+        self.X = T.matrix('X', dtype=self.float_dtype)
+        self.y = T.vector('y', dtype=self.int_dtype)
+        self.draws = T.tensor3('draws', dtype=self.float_dtype)
 
-        self.parameters = T.vector('parameters', dtype=self.float_type)
-        self.weights = T.vector('weights', dtype=self.float_type)
+        self.parameters = T.vector('parameters', dtype=self.float_dtype)
+        self.weights = T.vector('weights', dtype=self.float_dtype)
 
         self.cost, self.error, self.predictions = self.multinomial_logit_cost()
         self.cost_function = self.compile_cost_function()
@@ -75,25 +75,28 @@ class TheanoMixedLogit(object):
 
 
 class MixedLogitEstimator(object):
-    def __init__(self, X, y, parameters, utility_functions, weights, num_alternatives):
+    def __init__(self, X, y, parameters, utility_functions, weights, num_alternatives, num_draws, float_dtype, int_dtype):
         self.X = X
         self.y = y
         self.iter = 0
         self.last_time = time.clock()
 
+        self.float_dtype = float_dtype
+        self.int_dtype = int_dtype
+
         # Random draws
-        self.num_draws = 1000
+        self.num_draws = num_draws
         self.num_observations = self.X.shape[0]
         self.num_alternatives = num_alternatives
 
-        self.V = np.zeros((X.shape[0], num_alternatives, self.num_draws), dtype=theano.config.floatX)
+        self.V = np.zeros((X.shape[0], num_alternatives, self.num_draws), dtype=self.float_dtype)
         self.parameters = parameters
         self.utility_functions = utility_functions
 
         self.draws = self.generate_random_draws()
         self.weights = weights
 
-        tml = TheanoMixedLogit(utility_functions)
+        tml = TheanoMixedLogit(utility_functions, self.float_dtype, self.int_dtype)
         self.cost_function = tml.cost_function
         self.gradient_function = tml.gradient_function
 
@@ -103,7 +106,7 @@ class MixedLogitEstimator(object):
             np.random.random_sample(
                 (self.num_observations, len(self.parameters), self.num_draws)
             )
-        )).astype(theano.config.floatX)
+        )).astype(self.float_dtype)
         return draws
 
     def cost(self, parameters):
@@ -111,7 +114,7 @@ class MixedLogitEstimator(object):
         return cost
 
     def maybe_fix_dtype(self, parameters):
-        if theano.config.floatX == 'float32':
+        if self.float_dtype == 'float32':
             # optimize.fmin_bfgs changes the dtype of parameters to float64
             parameters = parameters.astype('float32')
         return parameters

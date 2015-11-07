@@ -3,10 +3,15 @@ import theano
 from theano_ml_estimator.mixed_logit_estimator import MixedLogitEstimator
 from nl_data_loader.nl_data_loader import NLDataLoader
 import time
-from theano_ml_estimator.utility_functions import UtilityFunctions
+from theano_ml_estimator.utility_functions import UtilityFunctions, parameter_map, parameter_names
 
 float_dtype = theano.config.floatX
-int_dtype = 'int64'
+int_dtype = None
+if float_dtype == 'float64':
+    int_dtype = 'int64'
+elif float_dtype == 'float32':
+    int_dtype = 'int32'
+
 np.seterr(all='raise')
 
 # choice, experiment_id, weight, p_zone, a_zone, outward_period, return_period, purpose,
@@ -41,10 +46,12 @@ X, y = dl.get_X_and_y()
 num_alternatives = 6
 X /= 100  # scale the costs and travel times
 
+num_draws = 1000
+
 uf = UtilityFunctions()
 input_parameters = uf.input_parameters
 
-mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives)
+mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives, num_draws, float_dtype, int_dtype)
 initial_cost, initial_error, _ = mle.results(input_parameters)
 
 start_time = time.clock()
@@ -62,7 +69,6 @@ def print_params(values, name_map, names):
     for name in names:
         print('%s: %.2f' % (name, values[name_map[name]]))
 
-from utility_functions import parameter_map, parameter_names
 print_params(output_parameters, parameter_map, parameter_names)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
