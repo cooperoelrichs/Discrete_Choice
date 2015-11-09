@@ -5,6 +5,8 @@ import theano.typed_list
 import theano.tensor as T
 # from theano.tensor.shared_randomstreams import RandomStreams
 import time
+import matplotlib.pyplot as plt
+
 
 # from sklearn.preprocessing import LabelBinarizer
 # from collections import namedtuple
@@ -79,6 +81,7 @@ class MixedLogitEstimator(object):
         self.X = X
         self.y = y
         self.iter = 0
+        self.results_by_iteration = {}
         self.last_time = time.clock()
 
         self.float_dtype = float_dtype
@@ -138,28 +141,65 @@ class MixedLogitEstimator(object):
         return grad
 
     def estimate(self):
-        self.iter = 1
+        self.iter = 0
         self.gradient_check(self.cost, self.gradient, self.parameters)
 
-        print('Starting estimation. Elapsed time: %.0fs' % self.get_elapsed_time_and_reset_timer())
-        self.parameters = optimize.fmin_bfgs(self.cost,
-                                             self.parameters,
-                                             fprime=self.gradient,
-                                             gtol=0.00001,
-                                             maxiter=100,
-                                             callback=self.update_random_draws,
-                                             disp=True)
+        cost, error, _ = self.results(self.parameters)
+        self.results_by_iteration[self.iter] = (cost, 1 - error)
 
+        print('Starting estimation. Elapsed time: %.0fs' % self.get_elapsed_time_and_reset_timer())
+        result = optimize.minimize(
+            fun=self.cost,
+            x0=self.parameters,
+            method='BFGS',
+            # method='CG',
+            jac=self.gradient,
+            tol=0.00001,
+            callback=self.update_random_draws,
+            # retall=True,
+            options={
+                'disp': True,
+                'maxiter': 100,
+            }
+        )
+
+        self.parameters = result.x
+
+        self.plot_cost_by_iteration()
         self.gradient_check(self.cost, self.gradient, self.parameters)
         cost, error, predictions = self.results(self.parameters)
         return cost, error, predictions, self.parameters
 
-    def update_random_draws(self, _):
+    def update_random_draws(self, current_parameters):
         elapsed_time = self.get_elapsed_time_and_reset_timer()
-        print('Updating draws. Current iter: %i. Iter time: %.0fs' % (self.iter, elapsed_time))
 
-        self.iter += 1
+        cost, error, _ = self.results(current_parameters)
+        self.results_by_iteration[self.iter] = (cost, 1 - error)
+
+        print('Updating draws. Current iter: %i. Iter time: %.0fs' % (self.iter, elapsed_time))
         self.draws = self.generate_random_draws()
+        self.iter += 1
+
+    def plot_cost_by_iteration(self):
+        fig, ax1 = plt.subplots()
+        title = 'cost by iter - %i draws' % self.num_draws
+        ax1.set_title(title)
+
+        iters = list(self.results_by_iteration.keys())
+        costs = [cost for cost, _ in self.results_by_iteration.values()]
+        accuracies = [accuracy for _, accuracy in self.results_by_iteration.values()]
+
+        ax1.plot(iters, costs, color='b')
+        ax1.set_ylabel('mean cost', color='b')
+        ax1.set_xlabel('iter')
+
+        ax2 = ax1.twinx()
+        ax2.plot(iters, accuracies, color='r')
+        ax2.set_ylabel('accuracy', color='r')
+
+        dir = 'theano_ml_estimator/results/'
+        plt.savefig(dir + title, bbox_inches='tight')
+        plt.close()
 
     def get_elapsed_time_and_reset_timer(self):
         current_time = time.clock()
