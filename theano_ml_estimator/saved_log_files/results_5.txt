@@ -1,0 +1,68 @@
+# 20,000 Draws!
+
+Updating draws. Current iter: 11. Iter time: 1191s
+Updating draws. Current iter: 12. Iter time: 1195s
+Updating draws. Current iter: 13. Iter time: 1196s
+Updating draws. Current iter: 14. Iter time: 1195s
+Updating draws. Current iter: 15. Iter time: 1196s
+Updating draws. Current iter: 16. Iter time: 1195s
+Updating draws. Current iter: 17. Iter time: 1194s
+Updating draws. Current iter: 18. Iter time: 1193s
+Updating draws. Current iter: 19. Iter time: 1194s
+Updating draws. Current iter: 20. Iter time: 1193s
+Updating draws. Current iter: 21. Iter time: 1195s
+Updating draws. Current iter: 22. Iter time: 1196s
+Updating draws. Current iter: 23. Iter time: 1193s
+Updating draws. Current iter: 24. Iter time: 1192s
+Updating draws. Current iter: 25. Iter time: 1190s
+Updating draws. Current iter: 26. Iter time: 1192s
+Updating draws. Current iter: 27. Iter time: 1196s
+Updating draws. Current iter: 28. Iter time: 1195s
+Updating draws. Current iter: 29. Iter time: 1191s
+Updating draws. Current iter: 30. Iter time: 1192s
+Updating draws. Current iter: 31. Iter time: 1196s
+Updating draws. Current iter: 32. Iter time: 1195s
+Updating draws. Current iter: 33. Iter time: 1192s
+Updating draws. Current iter: 34. Iter time: 1194s
+Updating draws. Current iter: 35. Iter time: 1196s
+Updating draws. Current iter: 36. Iter time: 1194s
+Updating draws. Current iter: 37. Iter time: 1188s
+Updating draws. Current iter: 38. Iter time: 1189s
+Updating draws. Current iter: 39. Iter time: 1190s
+Warning: Desired error not necessarily achieved due to precision loss.
+         Current function value: 95.873222
+         Iterations: 39
+         Function evaluations: 63
+         Gradient evaluations: 51
+Gradient error: 0.000248
+
+bias_bicycle: -4.56
+bias_car: -1.40
+bias_pt_walk_access: -1.78
+bias_pt_park_access: -1.33
+bias_pt_kiss_access: -0.79
+cost_bicycle: -0.35
+cost_car: -0.34
+cost_pt: -0.26
+cost_walk: -0.35
+random_cost_pt: 0.03
+random_cost_walk: 0.03
+random_cost_car: 0.00
+random_cost_bicycle: -0.04
+error_pt: 0.03
+error_car: -0.01
+error_non_mech: -0.28
+error_bicycle: -3.13
+Gradient is: [-0.01947922 -0.02290552 -0.02456063 -0.01119454  0.03048811 -0.36867184
+ -0.31758587  0.07241457  1.1913917  -1.33735985  2.0894025  -0.25699231
+ -0.42057555  0.06072994 -0.0394777   0.01065655 -0.02873077]
+Estimate time: 57784.68
+Initial Cost is: 242.65
+Initial Accuracy is: 0.03
+Cost is: 95.88
+Accuracy is: 0.79
+dev@fischer:~/Projects/Discrete_Choice$ ^C
+dev@fischer:~/Projects/Discrete_Choice$
+
+
+
