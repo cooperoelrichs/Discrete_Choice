@@ -61,8 +61,3 @@ Initial Cost is: 242.65
 Initial Accuracy is: 0.03
 Cost is: 95.88
 Accuracy is: 0.79
-dev@fischer:~/Projects/Discrete_Choice$ ^C
-dev@fischer:~/Projects/Discrete_Choice$
-
-
-
