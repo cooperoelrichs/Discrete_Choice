@@ -83,8 +83,8 @@ feature_map = {
 
 class UtilityFunctions(object):
     def __init__(self):
-        self.input_parameters = np.zeros(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
-        
+        self.input_parameters = np.random.randn(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
+
     def calculate_V(self, V, X, parameters, draws):
         # V[exps, alts, draws]
         V = T.set_subtensor(V[:, 0, :], self.bicycle(X, parameters, draws))
