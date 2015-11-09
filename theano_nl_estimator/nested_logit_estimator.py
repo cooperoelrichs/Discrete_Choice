@@ -80,7 +80,7 @@ class TheanoNestedLogit(object):
         l = T.set_subtensor(self.l_input[self.lambdas[:, 0]], self.parameters[self.lambdas[:, 1]])
 
         V = T.dot(self.X, W) + b  # calculate utilities
-        # V = V - V.mean(axis=1, keepdims=True)  # numerical stability
+        V = V - V.mean(axis=1, keepdims=True)  # numerical stability
         # V = T.clip(V, -80, 80)  # numerical stability
         exp_V = T.exp(V / l[self.nest_indices])  # exp of the scaled utilities
         P = self.calculate_probabilities(exp_V, l, self.alternatives, self.nest_indices)
