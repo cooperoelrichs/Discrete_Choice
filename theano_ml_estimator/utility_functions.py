@@ -20,7 +20,12 @@ parameter_map = {
     'error_car': 14,
     'error_non_mech': 15,
     'error_bicycle': 16,
-    # 'error_pt_kiss_access': 19,
+    'error_pt_kiss_access': 19,
+
+    # 'zero_car_household': 20,
+    # 'one_car_household': 21,
+    # 'cbd_core_destination': 22,
+    # 'cbd_non_core_destination': 23,
 }
 
 parameter_names = [
@@ -41,7 +46,12 @@ parameter_names = [
     'error_car',
     'error_non_mech',
     'error_bicycle',
-    # 'error_pt_kiss_access': 19,
+    'error_pt_kiss_access',
+
+    # 'zero_car_house_hold',
+    # 'one_car_house_hold',
+    # 'cbd_core_destination',
+    # 'cbd_non_core_destination',
 ]
 
 draw_map = {
@@ -53,7 +63,7 @@ draw_map = {
     'error_car': 5,
     'error_non_mech': 6,
     'error_bicycle': 7,
-    # 'error_pt_kiss_access': 8,
+    'error_pt_kiss_access': 8,
 }
 
 feature_map = {
@@ -82,7 +92,7 @@ feature_map = {
 
 class UtilityFunctions(object):
     def __init__(self):
-        self.input_parameters = np.random.randn(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
+        self.input_parameters = np.zeros(len(parameter_map))  # np.random.randn(14).astype(float_dtype)
 
     def calculate_V(self, V, X, parameters, draws):
         # V[exps, alts, draws]
@@ -106,11 +116,14 @@ class UtilityFunctions(object):
                        (X[:, feature_map['Bicycle_Cost_Return']] *
                         parameters[parameter_map['random_cost_bicycle']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_bicycle'], :])
-
         return bias + cost[:, np.newaxis] + random_cost + error
 
     def car(self, X, parameters, draws):
-        bias = parameters[parameter_map['bias_car']]
+        bias = (parameters[parameter_map['bias_car']])  # +
+                # parameters[parameter_map['zero_car_household']] +
+                # parameters[parameter_map['one_car_household']] +
+                # parameters[parameter_map['cbd_core_destination']] +
+                # parameters[parameter_map['cbd_non_core_destination']])
         cost = (X[:, feature_map['Car_Cost_Outward']] * parameters[parameter_map['cost_car']] +
                 X[:, feature_map['Car_Cost_Return']] * parameters[parameter_map['cost_car']])
         error = parameters[parameter_map['error_car']] * draws[:, draw_map['error_car'], :]
@@ -120,7 +133,6 @@ class UtilityFunctions(object):
                        (X[:, feature_map['Car_Cost_Return']] *
                         parameters[parameter_map['random_cost_car']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_car'], :])
-
         return bias + cost[:, np.newaxis] + random_cost + error
 
     def pt_walk_access(self, X, parameters, draws):
@@ -134,35 +146,35 @@ class UtilityFunctions(object):
                        (X[:, feature_map['WAWE_Cost_Return']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_pt'], :])
-
         return bias + cost[:, np.newaxis] + random_cost + error
 
     def pt_park_access(self, X, parameters, draws):
         bias = parameters[parameter_map['bias_pt_park_access']]
         cost = (X[:, feature_map['PAWE_Cost_Outward']] * parameters[parameter_map['cost_pt']] +
                 X[:, feature_map['WAPE_Cost_Return']] * parameters[parameter_map['cost_pt']])
-        error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
+        error = (parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :] +
+                 parameters[parameter_map['error_car']] * draws[:, draw_map['error_car'], :])
         random_cost = ((X[:, feature_map['PAWE_Cost_Outward']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_pt'], :] +
                        (X[:, feature_map['WAPE_Cost_Return']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_pt'], :])
-
         return bias + cost[:, np.newaxis] + random_cost + error
 
     def pt_kiss_access(self, X, parameters, draws):
         bias = parameters[parameter_map['bias_pt_kiss_access']]
         cost = (X[:, feature_map['KAWE_Cost_Outward']] * parameters[parameter_map['cost_pt']] +
                 X[:, feature_map['WAKE_Cost_Return']] * parameters[parameter_map['cost_pt']])
-        error = parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :]
+        error = (parameters[parameter_map['error_pt']] * draws[:, draw_map['error_pt'], :] +
+                 parameters[parameter_map['error_car']] * draws[:, draw_map['error_car'], :] +
+                 parameters[parameter_map['error_pt_kiss_access']] * draws[:, draw_map['error_pt_kiss_access'], :])
         random_cost = ((X[:, feature_map['KAWE_Cost_Outward']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_pt'], :] +
                        (X[:, feature_map['WAKE_Cost_Return']] *
                         parameters[parameter_map['random_cost_pt']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_pt'], :])
-
         return bias + cost[:, np.newaxis] + random_cost + error
 
     def walk(self, X, parameters, draws):
@@ -175,5 +187,4 @@ class UtilityFunctions(object):
                        (X[:, feature_map['Walk_Cost_Return']] *
                         parameters[parameter_map['random_cost_walk']])[:, np.newaxis] *
                        draws[:, draw_map['random_cost_walk'], :])
-
         return cost[:, np.newaxis] + random_cost + error
