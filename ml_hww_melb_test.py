@@ -54,6 +54,8 @@ input_parameters = uf.input_parameters
 mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives, num_draws, float_dtype, int_dtype)
 initial_cost, initial_error, _ = mle.results(input_parameters)
 
+print(1 - initial_error)
+
 start_time = time.clock()
 cost, error, predictions, output_parameters = mle.estimate()
 end_time = time.clock()

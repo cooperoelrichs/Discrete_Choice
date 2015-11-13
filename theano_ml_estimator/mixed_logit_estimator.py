@@ -171,16 +171,17 @@ class MixedLogitEstimator(object):
         return cost, error, predictions, self.parameters
 
     def update_random_draws(self, current_parameters):
-        elapsed_time = self.get_elapsed_time_and_reset_timer()
+        self.iter += 1
 
+        elapsed_time = self.get_elapsed_time_and_reset_timer()
         cost, error, _ = self.results(current_parameters)
         accuracy = 1 - error
         self.results_by_iteration[self.iter] = (cost, accuracy)
 
-        print('Updating draws. Current iter: %i. Current LL: %.0f. Current accuracy: %.0f. Iter time: %.0fs.'
+        print('Updating draws. Current iter: %i. Current LL: %.1f. Current accuracy: %.3f. Iter time: %.0fs.'
               % (self.iter, cost, accuracy, elapsed_time))
-        self.draws = self.generate_random_draws()
-        self.iter += 1
+        print('Not updating draws!')
+        # self.draws = self.generate_random_draws()
 
     def plot_cost_by_iteration(self):
         fig, ax1 = plt.subplots()
