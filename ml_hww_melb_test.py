@@ -44,7 +44,7 @@ dl.print_data_info()
 weights = dl.get('weight')
 X, y = dl.get_X_and_y()
 num_alternatives = 6
-X /= 100  # scale the costs and travel times
+X /= 100  # scale the costs
 
 num_draws = 1000
 
@@ -61,10 +61,6 @@ cost, error, predictions, output_parameters = mle.estimate()
 end_time = time.clock()
 
 final_grad = mle.gradient(output_parameters)
-# W, b, l = nle.extract_parameters(output_parameters)
-# print(b)
-# print(W)
-# print(l)
 
 
 def print_params(values, name_map, names):
