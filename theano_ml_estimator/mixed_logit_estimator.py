@@ -103,15 +103,6 @@ class MixedLogitEstimator(object):
         self.cost_function = tml.cost_function
         self.gradient_function = tml.gradient_function
 
-    def generate_random_draws(self):
-        np.random.random_sample()
-        draws = -np.log(-np.log(
-            np.random.random_sample(
-                (self.num_observations, len(self.parameters), self.num_draws)
-            )
-        )).astype(self.float_dtype)
-        return draws
-
     def cost(self, parameters):
         cost, _, _ = self.results(parameters)
         return cost
@@ -182,6 +173,15 @@ class MixedLogitEstimator(object):
               % (self.iter, cost, accuracy, elapsed_time))
         print('Not updating draws!')
         # self.draws = self.generate_random_draws()
+
+    def generate_random_draws(self):
+        np.random.random_sample()
+        draws = -np.log(-np.log(
+            np.random.random_sample(
+                (self.num_observations, len(self.parameters), self.num_draws)
+            )
+        )).astype(self.float_dtype)
+        return draws
 
     def plot_cost_by_iteration(self):
         fig, ax1 = plt.subplots()
