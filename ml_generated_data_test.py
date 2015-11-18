@@ -7,12 +7,9 @@ import time
 import sklearn.datasets as datasets
 
 
-parameter_names = [
-    '1-bias', '1-cost', '1-random-cost', '1-redundant', '1-random-redundant',
-    '2-bias', '2-cost', '2-random-cost', '2-redundant', '2-random-redundant']
-parameter_map = {
-    '1-bias': 0, '1-scale': 1, '1-random-scale': 2, '1-redundant': 3, '1-random-redundant': 4,
-    '2-bias': 5, '2-scale': 6, '2-random-scale': 7, '2-redundant': 8, '2-random-redundant': 9}
+b_map = {
+    '1-bias': 0, '1-cost': 1, '1-random-cost': 2, '1-redundant': 3, '1-random-redundant': 4,
+    '2-bias': 5, '2-cost': 6, '2-random-cost': 7, '2-redundant': 8, '2-random-redundant': 9}
 
 class UF(object):
     def __init__(self):
@@ -25,26 +22,26 @@ class UF(object):
         # B [parameters]
         # R [obs x B_r x draws]
 
-        V = T.set_subtensor(V[:, 0, :], (B[0] +
-                                         B[1]*X[:, 0, np.newaxis] +
-                                         B[2]*R[:, 0, :]*X[:, 0, np.newaxis] +
-                                         B[3]*X[:, 1, np.newaxis] +
-                                         B[4]*R[:, 1, :]*X[:, 1, np.newaxis]))
-        V = T.set_subtensor(V[:, 1, :], (B[5] +
-                                         B[6]*X[:, 0, np.newaxis] +
-                                         B[7]*R[:, 0, :]*X[:, 0, np.newaxis] +
-                                         B[8]*X[:, 1, np.newaxis] +
-                                         B[9]*R[:, 1, :]*X[:, 1, np.newaxis]))
+        V = T.set_subtensor(V[:, 0, :], (B[b_map['1-bias']] +
+                                         B[b_map['1-cost']]*X[:, 0, np.newaxis] +
+                                         B[b_map['1-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+                                         B[b_map['1-redundant']]*X[:, 1, np.newaxis] +
+                                         B[b_map['1-random-redundant']]*R[:, 1, :]*X[:, 1, np.newaxis]))
+        V = T.set_subtensor(V[:, 1, :], (B[b_map['2-bias']] +
+                                         B[b_map['2-cost']]*X[:, 0, np.newaxis] +
+                                         B[b_map['2-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+                                         B[b_map['2-redundant']]*X[:, 1, np.newaxis] +
+                                         B[b_map['2-random-redundant']]*R[:, 1, :]*X[:, 1, np.newaxis]))
         return V
 
 
-num_draws = 2000
+num_draws = 1000
 num_alternatives = 2
 input_parameters = np.zeros(10, dtype='float64')
 uf = UF()
 
 X, y = datasets.make_classification(
-    n_samples=5000, n_features=2,
+    n_samples=10000, n_features=2,
     n_informative=1, n_redundant=1, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
     random_state=1
@@ -62,11 +59,11 @@ end_time = time.clock()
 final_grad = mle.gradient(output_parameters)
 
 
-def print_params(values, name_map, names):
-    for name in names:
-        print('%s: %.2f' % (name, values[name_map[name]]))
+def print_params(values, name_map):
+    for name, i in name_map.items():
+        print('%s: %.2f' % (name, values[i]))
 
-print_params(output_parameters, parameter_map, parameter_names)
+print_params(output_parameters, b_map)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % initial_cost)
