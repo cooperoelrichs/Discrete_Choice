@@ -1,19 +1,47 @@
 import numpy as np
 import theano
+import theano.tensor as T
 from theano_ml_estimator.mixed_logit_estimator import MixedLogitEstimator
-from nl_data_loader.nl_data_loader import NLDataLoader
 import time
-from theano_ml_estimator.utility_functions import UtilityFunctions, parameter_map, parameter_names
+
+import sklearn.datasets as datasets
 
 
-num_draws = 1000
+parameter_names = ['1-bias', '1-scale', '1-random-scale', '2-bias', '2-scale', '2-random-scale']
+parameter_map = {'1-bias': 0, '1-scale': 1, '1-random-scale': 2, '2-bias': 3, '2-scale': 4, '2-random-scale': 5}
 
-uf = V.parameters.draws
+class UF(object):
+    def __init__(self):
+        pass
 
-mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives, num_draws, 'float64', 'int64')
+    def calculate_V(self, V, X, B, R):
+        # V[exps, alts, draws]
+
+        # X [obs x features]
+        # B [parameters]
+        # R [obs x B_r x draws]
+
+        V = T.set_subtensor(V[:, 0, :], B[0] + B[1]*X[:, 0, np.newaxis] + B[2]*R[:, 0, :]*X[:, 0, np.newaxis])
+        V = T.set_subtensor(V[:, 1, :], B[3] + B[4]*X[:, 0, np.newaxis] + B[5]*R[:, 1, :]*X[:, 0, np.newaxis])
+        return V
+
+
+num_draws = 2000
+num_alternatives = 2
+input_parameters = np.zeros(6, dtype='float64')
+uf = UF()
+
+X, y = datasets.make_classification(
+    n_samples=5000, n_features=1,
+    n_informative=1, n_redundant=0, n_repeated=0,
+    n_classes=2, n_clusters_per_class=1,
+    random_state=1
+)
+
+weights = np.ones_like(y)
+
+mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives, num_draws, False, 'float64', 'int64')
 initial_cost, initial_error, _ = mle.results(input_parameters)
-
-print(1 - initial_error)
 
 start_time = time.clock()
 cost, error, predictions, output_parameters = mle.estimate()
