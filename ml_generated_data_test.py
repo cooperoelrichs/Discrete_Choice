@@ -7,9 +7,12 @@ import time
 import sklearn.datasets as datasets
 
 
-parameter_names = ['1-bias', '1-cost', '1-random-cost', '1-redundant', '1-random-redundant',
-                   '2-bias', '2-cost', '2-random-cost', '2-redundant', '2-random-redundant']
-parameter_map = {'1-bias': 0, '1-scale': 1, '1-random-scale': 2, '2-bias': 3, '2-scale': 4, '2-random-scale': 5}
+parameter_names = [
+    '1-bias', '1-cost', '1-random-cost', '1-redundant', '1-random-redundant',
+    '2-bias', '2-cost', '2-random-cost', '2-redundant', '2-random-redundant']
+parameter_map = {
+    '1-bias': 0, '1-scale': 1, '1-random-scale': 2, '1-redundant': 3, '1-random-redundant': 4,
+    '2-bias': 5, '2-scale': 6, '2-random-scale': 7, '2-redundant': 8, '2-random-redundant': 9}
 
 class UF(object):
     def __init__(self):
