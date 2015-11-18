@@ -7,7 +7,8 @@ import time
 import sklearn.datasets as datasets
 
 
-parameter_names = ['1-bias', '1-scale', '1-random-scale', '2-bias', '2-scale', '2-random-scale']
+parameter_names = ['1-bias', '1-cost', '1-random-cost', '1-redundant', '1-random-redundant',
+                   '2-bias', '2-cost', '2-random-cost', '2-redundant', '2-random-redundant']
 parameter_map = {'1-bias': 0, '1-scale': 1, '1-random-scale': 2, '2-bias': 3, '2-scale': 4, '2-random-scale': 5}
 
 class UF(object):
@@ -21,19 +22,27 @@ class UF(object):
         # B [parameters]
         # R [obs x B_r x draws]
 
-        V = T.set_subtensor(V[:, 0, :], B[0] + B[1]*X[:, 0, np.newaxis] + B[2]*R[:, 0, :]*X[:, 0, np.newaxis])
-        V = T.set_subtensor(V[:, 1, :], B[3] + B[4]*X[:, 0, np.newaxis] + B[5]*R[:, 1, :]*X[:, 0, np.newaxis])
+        V = T.set_subtensor(V[:, 0, :], (B[0] +
+                                         B[1]*X[:, 0, np.newaxis] +
+                                         B[2]*R[:, 0, :]*X[:, 0, np.newaxis] +
+                                         B[3]*X[:, 1, np.newaxis] +
+                                         B[4]*R[:, 1, :]*X[:, 1, np.newaxis]))
+        V = T.set_subtensor(V[:, 1, :], (B[5] +
+                                         B[6]*X[:, 0, np.newaxis] +
+                                         B[7]*R[:, 0, :]*X[:, 0, np.newaxis] +
+                                         B[8]*X[:, 1, np.newaxis] +
+                                         B[9]*R[:, 1, :]*X[:, 1, np.newaxis]))
         return V
 
 
 num_draws = 2000
 num_alternatives = 2
-input_parameters = np.zeros(6, dtype='float64')
+input_parameters = np.zeros(10, dtype='float64')
 uf = UF()
 
 X, y = datasets.make_classification(
-    n_samples=5000, n_features=1,
-    n_informative=1, n_redundant=0, n_repeated=0,
+    n_samples=5000, n_features=2,
+    n_informative=1, n_redundant=1, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
     random_state=1
 )
