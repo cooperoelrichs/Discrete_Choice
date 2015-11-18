@@ -77,7 +77,8 @@ class TheanoMixedLogit(object):
 
 
 class MixedLogitEstimator(object):
-    def __init__(self, X, y, parameters, utility_functions, weights, num_alternatives, num_draws, float_dtype, int_dtype):
+    def __init__(self, X, y, parameters, utility_functions, weights, num_alternatives, num_draws,
+                 update_draws, float_dtype, int_dtype):
         self.X = X
         self.y = y
         self.iter = 0
@@ -86,6 +87,9 @@ class MixedLogitEstimator(object):
 
         self.float_dtype = float_dtype
         self.int_dtype = int_dtype
+        self.update_draws = update_draws
+        if not self.update_draws:
+            print('Not updating draws!')
 
         # Random draws
         self.num_draws = num_draws
@@ -169,10 +173,11 @@ class MixedLogitEstimator(object):
         accuracy = 1 - error
         self.results_by_iteration[self.iter] = (cost, accuracy)
 
-        print('Updating draws. Current iter: %i. Current LL: %.1f. Current accuracy: %.3f. Iter time: %.0fs.'
+        print('Updating draws. Current iter: %i. Current LL: %.2f. Current accuracy: %.3f. Iter time: %.0fs.'
               % (self.iter, cost, accuracy, elapsed_time))
-        print('Not updating draws!')
-        # self.draws = self.generate_random_draws()
+
+        if self.update_draws:
+            self.draws = self.generate_random_draws()
 
     def generate_random_draws(self):
         np.random.random_sample()
