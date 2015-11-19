@@ -11,9 +11,12 @@ from sklearn.datasets import make_blobs
 
 
 b_map = OrderedDict([
-    ('1-bias', 0), ('1-correlation', 1), ('1-1', 2), ('1-1-random', 3), ('1-2', 4), ('1-2-random', 5),  # ('1-3', 5), ('1-3-random', 6),
-    ('2-bias', 6), ('2-correlation', 7), ('2-1', 8), ('2-1-random', 9), ('2-2', 10), ('2-2-random', 11),  # ('2-3', 12), ('2-3-random', 13),
-    ('3-bias', 12), ('3-1', 13), ('3-1-random', 14), ('3-2', 15), ('3-2-random', 16),  # ('3-3', 19), ('3-3-random', 20),
+    ('1,2-correlation', 0),
+    ('1,3-correlation', 1),
+    ('2,3-correlation', 2),
+    ('1-bias', 3), ('1-1', 4), ('1-1-random', 5), ('1-2', 6), ('1-2-random', 7),  # ('1-3', 5), ('1-3-random', 6),
+    ('2-bias', 8), ('2-1', 9), ('2-1-random', 10), ('2-2', 11), ('2-2-random', 12),  # ('2-3', 12), ('2-3-random', 13),
+    ('3-bias', 13), ('3-1', 14), ('3-1-random', 15), ('3-2', 16), ('3-2-random', 17),  # ('3-3', 19), ('3-3-random', 20),
 ])
 
 
@@ -29,6 +32,8 @@ class UF(object):
         # R [obs x B_r x draws]
 
         V = T.set_subtensor(V[:, 0, :], (
+            B[b_map['1,2-correlation']] +
+            B[b_map['1,3-correlation']] +
             B[b_map['1-bias']] +
             B[b_map['1-1']]*X[:, 0, np.newaxis] +
             B[b_map['1-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
@@ -38,6 +43,8 @@ class UF(object):
             # B[b_map['1-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
+            B[b_map['1,2-correlation']] +
+            B[b_map['2,3-correlation']] +
             B[b_map['2-bias']] +
             B[b_map['2-1']]*X[:, 0, np.newaxis] +
             B[b_map['2-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
@@ -47,6 +54,8 @@ class UF(object):
             # B[b_map['2-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 2, :], (
+            B[b_map['1,3-correlation']] +
+            B[b_map['2,3-correlation']] +
             B[b_map['3-bias']] +
             B[b_map['3-1']]*X[:, 0, np.newaxis] +
             B[b_map['3-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
@@ -59,7 +68,9 @@ class UF(object):
 
 
 # Make data
-n_samples = 5000
+# Based on:
+# http://scikit-learn.org/stable/auto_examples/calibration/plot_calibration.html#example-calibration-plot-calibration-py
+n_samples = 10000
 centers = [(-5.5, -5.5), (-4.5, -4.5), (5, 5)]
 X, y = make_blobs(
     n_samples=n_samples, n_features=2, cluster_std=1.0,
@@ -83,7 +94,7 @@ plt.title("Data")
 # exit()
 
 # Estimate model
-num_draws = 1000
+num_draws = 2000
 num_alternatives = 3
 input_parameters = np.zeros(len(b_map), dtype='float64')
 uf = UF()
@@ -104,7 +115,7 @@ def print_params(values, name_map):
         print('%s: %.2f' % (name, values[i]))
 
 print('Generated data test.')
-print('1 informative feature with some noise, 1 informative feature with lots of noise, 1 pure noise feature')
+print('Classes 1 and 2 are overlapping, class 3 is separated')
 print_params(output_parameters, b_map)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
