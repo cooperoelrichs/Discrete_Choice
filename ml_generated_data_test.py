@@ -9,9 +9,10 @@ from collections import OrderedDict
 
 
 b_map = OrderedDict([
-    ('1-bias', 0), ('1-cost', 1), ('1-random-cost', 2), ('1-cost-with-noise', 3), ('1-random-cost-with-noise', 4), ('1-noise', 5), ('1-random-noise', 6),
-    ('2-bias', 7), ('2-cost', 8), ('2-random-cost', 9), ('2-cost-with-noise', 10), ('2-random-cost-with-noise', 11), ('2-noise', 12), ('2-random-noise', 13)
+    ('1-bias', 0), ('1-1', 1), ('1-1-random', 2), ('1-2', 3), ('1-2-random', 4), ('1-3', 5), ('1-3-random', 6),
+    ('2-bias', 7), ('2-1', 8), ('2-1-random', 9), ('2-2', 10), ('2-2-random', 11), ('2-3', 12), ('2-3-random', 13)
 ])
+
 
 class UF(object):
     def __init__(self):
@@ -26,21 +27,21 @@ class UF(object):
 
         V = T.set_subtensor(V[:, 0, :], (
             B[b_map['1-bias']] +
-            B[b_map['1-cost']]*X[:, 0, np.newaxis] +
-            B[b_map['1-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['1-cost-with-noise']]*X[:, 1, np.newaxis] +
-            B[b_map['1-random-cost-with-noise']]*R[:, 1, :]*X[:, 1, np.newaxis] +
-            B[b_map['1-noise']]*X[:, 2, np.newaxis] +
-            B[b_map['1-random-noise']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[b_map['1-1']]*X[:, 0, np.newaxis] +
+            B[b_map['1-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[b_map['1-2']]*X[:, 1, np.newaxis] +
+            B[b_map['1-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] +
+            B[b_map['1-3']]*X[:, 2, np.newaxis] +
+            B[b_map['1-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
             B[b_map['2-bias']] +
-            B[b_map['2-cost']]*X[:, 0, np.newaxis] +
-            B[b_map['2-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['2-cost-with-noise']]*X[:, 1, np.newaxis] +
-            B[b_map['2-random-cost-with-noise']]*R[:, 1, :]*X[:, 1, np.newaxis] +
-            B[b_map['2-noise']]*X[:, 2, np.newaxis] +
-            B[b_map['2-random-noise']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[b_map['2-1']]*X[:, 0, np.newaxis] +
+            B[b_map['2-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[b_map['2-2']]*X[:, 1, np.newaxis] +
+            B[b_map['2-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] +
+            B[b_map['2-3']]*X[:, 2, np.newaxis] +
+            B[b_map['2-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         return V
 
@@ -54,11 +55,13 @@ X, y = datasets.make_classification(
     n_samples=5000, n_features=3,
     n_informative=2, n_redundant=0, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
-    random_state=1
+    random_state=1,
+    flip_y=0.4
 )
 
-
 X = (X - X.mean(axis=0)) / X.std(axis=0)
+print(X.sum(axis=0))
+print(X.mean(axis=0))
 
 random_numbers = np.random.random_sample(X[:, 1].shape)
 X[:, 1] = X[:, 1] + (random_numbers - random_numbers.mean())
