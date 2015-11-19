@@ -9,8 +9,8 @@ from collections import OrderedDict
 
 
 b_map = OrderedDict([
-    ('1-bias', 0), ('1-cost', 1), ('1-random-cost', 2), ('1-noise', 3), ('1-random-noise', 4),
-    ('2-bias', 5), ('2-cost', 6), ('2-random-cost', 7), ('2-noise', 8), ('2-random-noise', 9)
+    ('1-bias', 0), ('1-cost', 1), ('1-random-cost', 2), ('1-cost-with-noise', 3), ('1-random-cost-with-noise', 4), ('1-noise', 5), ('1-random-noise', 6),
+    ('2-bias', 7), ('2-cost', 8), ('2-random-cost', 9), ('2-cost-with-noise', 10), ('2-random-cost-with-noise', 11), ('2-noise', 12), ('2-random-noise', 13)
 ])
 
 class UF(object):
@@ -28,30 +28,40 @@ class UF(object):
             B[b_map['1-bias']] +
             B[b_map['1-cost']]*X[:, 0, np.newaxis] +
             B[b_map['1-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['1-noise']]*X[:, 1, np.newaxis] +
-            B[b_map['1-random-noise']]*R[:, 1, :]*X[:, 1, np.newaxis]
+            B[b_map['1-cost-with-noise']]*X[:, 1, np.newaxis] +
+            B[b_map['1-random-cost-with-noise']]*R[:, 1, :]*X[:, 1, np.newaxis] +
+            B[b_map['1-noise']]*X[:, 2, np.newaxis] +
+            B[b_map['1-random-noise']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
             B[b_map['2-bias']] +
             B[b_map['2-cost']]*X[:, 0, np.newaxis] +
             B[b_map['2-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['2-noise']]*X[:, 1, np.newaxis] +
-            B[b_map['2-random-noise']]*R[:, 1, :]*X[:, 1, np.newaxis]
+            B[b_map['2-cost-with-noise']]*X[:, 1, np.newaxis] +
+            B[b_map['2-random-cost-with-noise']]*R[:, 1, :]*X[:, 1, np.newaxis] +
+            B[b_map['2-noise']]*X[:, 2, np.newaxis] +
+            B[b_map['2-random-noise']]*R[:, 2, :]*X[:, 2, np.newaxis]
         ))
         return V
 
 
 num_draws = 2000
 num_alternatives = 2
-input_parameters = np.zeros(10, dtype='float64')
+input_parameters = np.zeros(14, dtype='float64')
 uf = UF()
 
 X, y = datasets.make_classification(
-    n_samples=10000, n_features=2,
-    n_informative=1, n_redundant=0, n_repeated=0,
+    n_samples=5000, n_features=3,
+    n_informative=2, n_redundant=0, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
     random_state=1
 )
+
+
+X = (X - X.mean(axis=0)) / X.std(axis=0)
+
+random_numbers = np.random.random_sample(X[:, 1].shape)
+X[:, 1] = X[:, 1] + (random_numbers - random_numbers.mean())
 
 weights = np.ones_like(y)
 
