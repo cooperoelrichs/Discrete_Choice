@@ -82,6 +82,8 @@ def print_params(values, name_map):
     for name, i in name_map.items():
         print('%s: %.2f' % (name, values[i]))
 
+print('Generated data test.')
+print('1 informative feature with some noise, 1 informative feature with lots of noise, 1 pure noise feature')
 print_params(output_parameters, b_map)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
