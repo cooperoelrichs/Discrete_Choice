@@ -79,6 +79,8 @@ class TheanoMixedLogit(object):
 class MixedLogitEstimator(object):
     def __init__(self, X, y, parameters, utility_functions, weights, num_alternatives, num_draws,
                  update_draws, float_dtype, int_dtype):
+        np.random.seed(1)
+
         self.X = X
         self.y = y
         self.iter = 0
@@ -106,6 +108,7 @@ class MixedLogitEstimator(object):
         tml = TheanoMixedLogit(utility_functions, self.float_dtype, self.int_dtype)
         self.cost_function = tml.cost_function
         self.gradient_function = tml.gradient_function
+
 
     def cost(self, parameters):
         cost, _, _ = self.results(parameters)

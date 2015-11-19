@@ -5,11 +5,13 @@ from theano_ml_estimator.mixed_logit_estimator import MixedLogitEstimator
 import time
 
 import sklearn.datasets as datasets
+from collections import OrderedDict
 
 
-b_map = {
-    '1-bias': 0, '1-cost': 1, '1-random-cost': 2, '1-redundant': 3, '1-random-redundant': 4,
-    '2-bias': 5, '2-cost': 6, '2-random-cost': 7, '2-redundant': 8, '2-random-redundant': 9}
+b_map = OrderedDict([
+    ('1-bias', 0), ('1-cost', 1), ('1-random-cost', 2), ('1-noise', 3), ('1-random-noise', 4),
+    ('2-bias', 5), ('2-cost', 6), ('2-random-cost', 7), ('2-noise', 8), ('2-random-noise', 9)
+])
 
 class UF(object):
     def __init__(self):
@@ -22,27 +24,31 @@ class UF(object):
         # B [parameters]
         # R [obs x B_r x draws]
 
-        V = T.set_subtensor(V[:, 0, :], (B[b_map['1-bias']] +
-                                         B[b_map['1-cost']]*X[:, 0, np.newaxis] +
-                                         B[b_map['1-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-                                         B[b_map['1-redundant']]*X[:, 1, np.newaxis] +
-                                         B[b_map['1-random-redundant']]*R[:, 1, :]*X[:, 1, np.newaxis]))
-        V = T.set_subtensor(V[:, 1, :], (B[b_map['2-bias']] +
-                                         B[b_map['2-cost']]*X[:, 0, np.newaxis] +
-                                         B[b_map['2-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-                                         B[b_map['2-redundant']]*X[:, 1, np.newaxis] +
-                                         B[b_map['2-random-redundant']]*R[:, 1, :]*X[:, 1, np.newaxis]))
+        V = T.set_subtensor(V[:, 0, :], (
+            B[b_map['1-bias']] +
+            B[b_map['1-cost']]*X[:, 0, np.newaxis] +
+            B[b_map['1-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[b_map['1-noise']]*X[:, 1, np.newaxis] +
+            B[b_map['1-random-noise']]*R[:, 1, :]*X[:, 1, np.newaxis]
+        ))
+        V = T.set_subtensor(V[:, 1, :], (
+            B[b_map['2-bias']] +
+            B[b_map['2-cost']]*X[:, 0, np.newaxis] +
+            B[b_map['2-random-cost']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[b_map['2-noise']]*X[:, 1, np.newaxis] +
+            B[b_map['2-random-noise']]*R[:, 1, :]*X[:, 1, np.newaxis]
+        ))
         return V
 
 
-num_draws = 1000
+num_draws = 2000
 num_alternatives = 2
 input_parameters = np.zeros(10, dtype='float64')
 uf = UF()
 
 X, y = datasets.make_classification(
     n_samples=10000, n_features=2,
-    n_informative=1, n_redundant=1, n_repeated=0,
+    n_informative=1, n_redundant=0, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
     random_state=1
 )
