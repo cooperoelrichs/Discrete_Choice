@@ -8,10 +8,36 @@ import sklearn.datasets as datasets
 from collections import OrderedDict
 
 
-param_map = OrderedDict([
-    ('1-bias', 0), ('1-bias-random', 1), ('1-1', 2), ('1-1-random', 3), ('1-2', 4), ('1-2-random', 5), ('1-3', 6), ('1-3-random', 7),
-    ('2-bias', 8), ('2-bias-random', 9), ('2-1', 10), ('2-1-random', 11), ('2-2', 12), ('2-2-random', 13), ('2-3', 14), ('2-3-random', 15)
-])
+param_map = OrderedDict([(name, i) for i, name in enumerate([
+    '1-bias-random',
+    # '2-bias-random',
+    '1-1-beta-random',
+    '1-2-beta-random',
+    '1-3-beta-random',
+    '2-1-beta-random',
+    '2-2-beta-random',
+    '2-3-beta-random',
+
+    '1-bias',
+    # '2-bias',
+    '1-1-beta',
+    '1-2-beta',
+    '1-3-beta',
+    '2-1-beta',
+    '2-2-beta',
+    '2-3-beta',
+])])
+
+draw_map = OrderedDict([(name, i) for i, name in enumerate([
+    '1-bias-random',
+    # '2-bias-random',
+    '1-1-beta-random',
+    '1-2-beta-random',
+    '1-3-beta-random',
+    '2-1-beta-random',
+    '2-2-beta-random',
+    '2-3-beta-random',
+])])
 
 
 class UF(object):
@@ -27,28 +53,28 @@ class UF(object):
 
         V = T.set_subtensor(V[:, 0, :], (
             B[param_map['1-bias']] +
-            B[param_map['1-bias-random']]*R[:, 0, :] +
-            B[param_map['1-1']]*X[:, 0, np.newaxis] +
-            B[param_map['1-1-random']]*R[:, 1, :]*X[:, 0, np.newaxis] +
-            B[param_map['1-2']]*X[:, 1, np.newaxis] +
-            B[param_map['1-2-random']]*R[:, 2, :]*X[:, 1, np.newaxis] +
-            B[param_map['1-3']]*X[:, 2, np.newaxis] +
-            B[param_map['1-3-random']]*R[:, 3, :]*X[:, 2, np.newaxis]
+            B[param_map['1-bias-random']]*R[:, draw_map['1-bias-random'], :] +
+            B[param_map['1-1-beta']]*X[:, 0, np.newaxis] +
+            B[param_map['1-1-beta-random']]*R[:, draw_map['1-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['1-2-beta']]*X[:, 1, np.newaxis] +
+            B[param_map['1-2-beta-random']]*R[:, draw_map['1-2-beta-random'], :]*X[:, 1, np.newaxis] +
+            B[param_map['1-3-beta']]*X[:, 2, np.newaxis] +
+            B[param_map['1-3-beta-random']]*R[:, draw_map['1-3-beta-random'], :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
-            B[param_map['2-bias']] +
-            B[param_map['2-bias-random']]*R[:, 0, :] +
-            B[param_map['2-1']]*X[:, 0, np.newaxis] +
-            B[param_map['2-1-random']]*R[:, 1, :]*X[:, 0, np.newaxis] +
-            B[param_map['2-2']]*X[:, 1, np.newaxis] +
-            B[param_map['2-2-random']]*R[:, 2, :]*X[:, 1, np.newaxis] +
-            B[param_map['2-3']]*X[:, 2, np.newaxis] +
-            B[param_map['2-3-random']]*R[:, 3, :]*X[:, 2, np.newaxis]
+            # B[param_map['2-bias']] +
+            # B[param_map['2-bias-random']]*R[:, draw_map['2-bias-random'], :] +
+            B[param_map['2-1-beta']]*X[:, 0, np.newaxis] +
+            B[param_map['2-1-beta-random']]*R[:, draw_map['2-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['2-2-beta']]*X[:, 1, np.newaxis] +
+            B[param_map['2-2-beta-random']]*R[:, draw_map['2-2-beta-random'], :]*X[:, 1, np.newaxis] +
+            B[param_map['2-3-beta']]*X[:, 2, np.newaxis] +
+            B[param_map['2-3-beta-random']]*R[:, draw_map['2-3-beta-random'], :]*X[:, 2, np.newaxis]
         ))
         return V
 
 
-num_draws = 2000
+num_draws = 1000
 num_alternatives = 2
 input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()
@@ -58,7 +84,7 @@ X, y = datasets.make_classification(
     n_informative=2, n_redundant=0, n_repeated=0,
     n_classes=2, n_clusters_per_class=1,
     random_state=1,
-    flip_y=0.4
+    # flip_y=0.4
 )
 
 X = (X - X.mean(axis=0)) / X.std(axis=0)
