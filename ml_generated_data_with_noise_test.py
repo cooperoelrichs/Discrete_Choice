@@ -8,9 +8,9 @@ import sklearn.datasets as datasets
 from collections import OrderedDict
 
 
-b_map = OrderedDict([
-    ('1-bias', 0), ('1-1', 1), ('1-1-random', 2), ('1-2', 3), ('1-2-random', 4), ('1-3', 5), ('1-3-random', 6),
-    ('2-bias', 7), ('2-1', 8), ('2-1-random', 9), ('2-2', 10), ('2-2-random', 11), ('2-3', 12), ('2-3-random', 13)
+param_map = OrderedDict([
+    ('1-bias', 0), ('1-bias-random', 1), ('1-1', 2), ('1-1-random', 3), ('1-2', 4), ('1-2-random', 5), ('1-3', 6), ('1-3-random', 7),
+    ('2-bias', 8), ('2-bias-random', 9), ('2-1', 10), ('2-1-random', 11), ('2-2', 12), ('2-2-random', 13), ('2-3', 14), ('2-3-random', 15)
 ])
 
 
@@ -26,29 +26,31 @@ class UF(object):
         # R [obs x B_r x draws]
 
         V = T.set_subtensor(V[:, 0, :], (
-            B[b_map['1-bias']] +
-            B[b_map['1-1']]*X[:, 0, np.newaxis] +
-            B[b_map['1-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['1-2']]*X[:, 1, np.newaxis] +
-            B[b_map['1-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] +
-            B[b_map['1-3']]*X[:, 2, np.newaxis] +
-            B[b_map['1-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[param_map['1-bias']] +
+            B[param_map['1-bias-random']]*R[:, 0, :] +
+            B[param_map['1-1']]*X[:, 0, np.newaxis] +
+            B[param_map['1-1-random']]*R[:, 1, :]*X[:, 0, np.newaxis] +
+            B[param_map['1-2']]*X[:, 1, np.newaxis] +
+            B[param_map['1-2-random']]*R[:, 2, :]*X[:, 1, np.newaxis] +
+            B[param_map['1-3']]*X[:, 2, np.newaxis] +
+            B[param_map['1-3-random']]*R[:, 3, :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
-            B[b_map['2-bias']] +
-            B[b_map['2-1']]*X[:, 0, np.newaxis] +
-            B[b_map['2-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['2-2']]*X[:, 1, np.newaxis] +
-            B[b_map['2-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] +
-            B[b_map['2-3']]*X[:, 2, np.newaxis] +
-            B[b_map['2-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[param_map['2-bias']] +
+            B[param_map['2-bias-random']]*R[:, 0, :] +
+            B[param_map['2-1']]*X[:, 0, np.newaxis] +
+            B[param_map['2-1-random']]*R[:, 1, :]*X[:, 0, np.newaxis] +
+            B[param_map['2-2']]*X[:, 1, np.newaxis] +
+            B[param_map['2-2-random']]*R[:, 2, :]*X[:, 1, np.newaxis] +
+            B[param_map['2-3']]*X[:, 2, np.newaxis] +
+            B[param_map['2-3-random']]*R[:, 3, :]*X[:, 2, np.newaxis]
         ))
         return V
 
 
 num_draws = 2000
 num_alternatives = 2
-input_parameters = np.zeros(14, dtype='float64')
+input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()
 
 X, y = datasets.make_classification(
@@ -84,7 +86,7 @@ def print_params(values, name_map):
 
 print('Generated data test.')
 print('1 informative feature with some noise, 1 informative feature with lots of noise, 1 pure noise feature')
-print_params(output_parameters, b_map)
+print_params(output_parameters, param_map)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % initial_cost)
