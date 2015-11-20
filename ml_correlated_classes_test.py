@@ -10,14 +10,29 @@ from matplotlib import cm
 from sklearn.datasets import make_blobs
 
 
-b_map = OrderedDict([
-    ('1,2-correlation', 0),
-    ('1,3-correlation', 1),
-    ('2,3-correlation', 2),
-    ('1-bias', 3), ('1-1', 4), ('1-1-random', 5), ('1-2', 6), ('1-2-random', 7),  # ('1-3', 5), ('1-3-random', 6),
-    ('2-bias', 8), ('2-1', 9), ('2-1-random', 10), ('2-2', 11), ('2-2-random', 12),  # ('2-3', 12), ('2-3-random', 13),
-    ('3-bias', 13), ('3-1', 14), ('3-1-random', 15), ('3-2', 16), ('3-2-random', 17),  # ('3-3', 19), ('3-3-random', 20),
-])
+param_map = OrderedDict([(name, i) for i, name in enumerate([
+    '1,2-bias-random',
+    '1,3-bias-random',
+    '2,3-bias-random',
+    '1,2-1-beta-random',
+    '1,3-1-beta-random',
+    '2,3-1-beta-random',
+    '1-bias', '1-1', '1-2',  # '1-1-random', '1-2-random',
+    '2-bias', '2-1', '2-2',  # '2-1-random', '2-2-random',
+    '3-bias', '3-1', '3-2',  # '3-1-random', '3-2-random',
+])])
+
+draw_map = OrderedDict([(name, i) for i, name in enumerate([
+    '1,2-bias-random',
+    '1,3-bias-random',
+    '2,3-bias-random',
+    '1,2-1-beta-random',
+    '1,3-1-beta-random',
+    '2,3-1-beta-random',
+    '1-1-random', '1-2-random',  # '1-3-random',
+    '2-1-random', '2-2-random',  # '2-3-random',
+    '3-1-random', '3-2-random',  # '3-3-random',
+])])
 
 
 class UF(object):
@@ -32,37 +47,37 @@ class UF(object):
         # R [obs x B_r x draws]
 
         V = T.set_subtensor(V[:, 0, :], (
-            B[b_map['1,2-correlation']] +
-            B[b_map['1,3-correlation']] +
-            B[b_map['1-bias']] +
-            B[b_map['1-1']]*X[:, 0, np.newaxis] +
-            B[b_map['1-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['1-2']]*X[:, 1, np.newaxis] +
-            B[b_map['1-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis]  # +
-            # B[b_map['1-3']]*X[:, 2, np.newaxis] +
-            # B[b_map['1-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[param_map['1,2-bias-random']]*R[:, draw_map['1,2-bias-random'], :] +
+            B[param_map['1,3-bias-random']]*R[:, draw_map['1,3-bias-random'], :] +
+            B[param_map['1,2-1-beta-random']]*R[:, draw_map['1,2-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['1,3-1-beta-random']]*R[:, draw_map['1,3-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['1-bias']] +
+            B[param_map['1-1']]*X[:, 0, np.newaxis] +
+            # B[b_map['1-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[param_map['1-2']]*X[:, 1, np.newaxis]  # +
+            # B[b_map['1-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis]  # +
         ))
         V = T.set_subtensor(V[:, 1, :], (
-            B[b_map['1,2-correlation']] +
-            B[b_map['2,3-correlation']] +
-            B[b_map['2-bias']] +
-            B[b_map['2-1']]*X[:, 0, np.newaxis] +
-            B[b_map['2-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['2-2']]*X[:, 1, np.newaxis] +
-            B[b_map['2-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis]  # +
-            # B[b_map['2-3']]*X[:, 2, np.newaxis] +
-            # B[b_map['2-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[param_map['1,2-bias-random']]*R[:, draw_map['1,2-bias-random'], :] +
+            B[param_map['2,3-bias-random']]*R[:, draw_map['2,3-bias-random'], :] +
+            B[param_map['1,2-1-beta-random']]*R[:, draw_map['1,2-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['2,3-1-beta-random']]*R[:, draw_map['2,3-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['2-bias']] +
+            B[param_map['2-1']]*X[:, 0, np.newaxis] +
+            # B[b_map['2-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[param_map['2-2']]*X[:, 1, np.newaxis]  # +
+            # B[b_map['2-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis]  # +
         ))
         V = T.set_subtensor(V[:, 2, :], (
-            B[b_map['1,3-correlation']] +
-            B[b_map['2,3-correlation']] +
-            B[b_map['3-bias']] +
-            B[b_map['3-1']]*X[:, 0, np.newaxis] +
-            B[b_map['3-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
-            B[b_map['3-2']]*X[:, 1, np.newaxis] +
-            B[b_map['3-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] #  +
-            # B[b_map['3-3']]*X[:, 2, np.newaxis] +
-            # B[b_map['3-3-random']]*R[:, 2, :]*X[:, 2, np.newaxis]
+            B[param_map['1,3-bias-random']]*R[:, draw_map['1,3-bias-random'], :] +
+            B[param_map['2,3-bias-random']]*R[:, draw_map['2,3-bias-random'], :] +
+            B[param_map['1,3-1-beta-random']]*R[:, draw_map['1,3-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['2,3-1-beta-random']]*R[:, draw_map['2,3-1-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['3-bias']] +
+            B[param_map['3-1']]*X[:, 0, np.newaxis] +
+            # B[b_map['3-1-random']]*R[:, 0, :]*X[:, 0, np.newaxis] +
+            B[param_map['3-2']]*X[:, 1, np.newaxis]  # +
+            # B[b_map['3-2-random']]*R[:, 1, :]*X[:, 1, np.newaxis] #  +
         ))
         return V
 
@@ -88,15 +103,14 @@ for this_y, color in zip(y_unique, colors):
     plt.scatter(this_X[:, 0], this_X[:, 1], c=color, alpha=0.5,
                 label="Class %s" % this_y)
 plt.legend(loc="best")
+title = 'correlated_classes_test_data'
 plt.title("Data")
-# plt.show()
-
-# exit()
+plt.savefig(title)
 
 # Estimate model
 num_draws = 2000
 num_alternatives = 3
-input_parameters = np.zeros(len(b_map), dtype='float64')
+input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()
 
 weights = np.ones_like(y)
@@ -114,14 +128,12 @@ def print_params(values, name_map):
     for name, i in name_map.items():
         print('%s: %.2f' % (name, values[i]))
 
-print('Generated data test.')
 print('Classes 1 and 2 are overlapping, class 3 is separated')
-print_params(output_parameters, b_map)
+
+print_params(output_parameters, param_map)
 print('Gradient is: ' + str(final_grad))
 print('Estimate time: %.2f' % (end_time - start_time))
 print('Initial Cost is: %.2f' % initial_cost)
 print('Initial Accuracy is: %.2f' % (1 - initial_error))
 print('Cost is: %.2f' % cost)
 print('Accuracy is: %.2f' % (1 - error))
-
-plt.show()
