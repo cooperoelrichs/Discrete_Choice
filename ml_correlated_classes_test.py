@@ -85,30 +85,27 @@ class UF(object):
 # Make data
 # Based on:
 # http://scikit-learn.org/stable/auto_examples/calibration/plot_calibration.html#example-calibration-plot-calibration-py
-n_samples = 10000
+n_samples = 5000
 centers = [(-5.5, -5.5), (-4.5, -4.5), (5, 5)]
 X, y = make_blobs(
     n_samples=n_samples, n_features=2, cluster_std=1.0,
-    centers=centers, shuffle=True, random_state=42
+    centers=centers, shuffle=True, random_state=1
 )
-
-# y[:n_samples // 2] = 0
-# y[n_samples // 2:] = 1
 
 plt.figure()
 y_unique = np.unique(y)
 colors = cm.rainbow(np.linspace(0.0, 1.0, y_unique.size))
 for this_y, color in zip(y_unique, colors):
     this_X = X[y == this_y]
-    plt.scatter(this_X[:, 0], this_X[:, 1], c=color, alpha=0.5,
-                label="Class %s" % this_y)
+    plt.scatter(this_X[:, 0], this_X[:, 1], c=color, alpha=0.5, label="Class %s" % this_y)
+
 plt.legend(loc="best")
 title = 'correlated_classes_test_data'
 plt.title("Data")
 plt.savefig(title)
 
 # Estimate model
-num_draws = 2000
+num_draws = 1000
 num_alternatives = 3
 input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()

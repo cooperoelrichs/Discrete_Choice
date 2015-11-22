@@ -6,6 +6,10 @@ import time
 
 import sklearn.datasets as datasets
 from collections import OrderedDict
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.datasets import make_blobs
 
 
 param_map = OrderedDict([(name, i) for i, name in enumerate([
@@ -79,12 +83,19 @@ num_alternatives = 2
 input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()
 
-X, y = datasets.make_classification(
-    n_samples=5000, n_features=3,
-    n_informative=2, n_redundant=0, n_repeated=0,
-    n_classes=2, n_clusters_per_class=1,
-    random_state=1,
-    # flip_y=0.4
+# X, y = datasets.make_classification(
+#     n_samples=5000, n_features=3,
+#     n_informative=2, n_redundant=0, n_repeated=0,
+#     n_classes=2, n_clusters_per_class=1,
+#     random_state=1,
+#     # flip_y=0.4
+# )
+
+n_samples = 5000
+centers = [(-10, -10, -10), (0, 0, 0), (10, 10, 10)]
+X, y = make_blobs(
+    n_samples=n_samples, n_features=3, cluster_std=1.0,
+    centers=centers, shuffle=True, random_state=1
 )
 
 X = (X - X.mean(axis=0)) / X.std(axis=0)
@@ -93,6 +104,28 @@ print(X.mean(axis=0))
 
 random_numbers = np.random.random_sample(X[:, 1].shape)
 X[:, 1] = X[:, 1] + (random_numbers - random_numbers.mean())
+
+
+fig = plt.figure()
+ax1 = fig.add_subplot(221)
+ax2 = fig.add_subplot(222)
+ax3 = fig.add_subplot(223)
+y_unique = np.unique(y)
+colors = cm.rainbow(np.linspace(0.0, 1.0, y_unique.size))
+for this_y, color in zip(y_unique, colors):
+    this_X = X[y == this_y]
+    # plt.legend(loc="best")
+    for ax, x1, x2 in [(ax1, 0, 1), (ax2, 0, 2), (ax3, 1, 2)]:
+        ax.set_title("X%i - X%i" % (x1, x2))
+        ax.scatter(this_X[:, x1], this_X[:, x2], c=color, alpha=0.5, label="Class %s" % this_y)
+
+plot_name = 'noisy_data_test'
+fig.suptitle(plot_name)
+# plt.show()
+plt.savefig(plot_name)
+
+exit()
+
 
 weights = np.ones_like(y)
 
