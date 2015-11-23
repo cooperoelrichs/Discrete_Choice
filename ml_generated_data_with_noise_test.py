@@ -77,12 +77,6 @@ class UF(object):
         ))
         return V
 
-
-num_draws = 1000
-num_alternatives = 2
-input_parameters = np.zeros(len(param_map), dtype='float64')
-uf = UF()
-
 # X, y = datasets.make_classification(
 #     n_samples=5000, n_features=3,
 #     n_informative=2, n_redundant=0, n_repeated=0,
@@ -92,30 +86,30 @@ uf = UF()
 # )
 
 n_samples = 5000
-centers = [(-10, -10, -10), (0, 0, 0), (10, 10, 10)]
+centers = [(-2, -2, -2), (2, 2, 2)]
 X, y = make_blobs(
-    n_samples=n_samples, n_features=3, cluster_std=1.0,
+    n_samples=n_samples, n_features=3, cluster_std=[1, 2, 1],
     centers=centers, shuffle=True, random_state=1
 )
 
-X = (X - X.mean(axis=0)) / X.std(axis=0)
-print(X.sum(axis=0))
-print(X.mean(axis=0))
+print(X.shape)
+print(y.shape)
 
-random_numbers = np.random.random_sample(X[:, 1].shape)
-X[:, 1] = X[:, 1] + (random_numbers - random_numbers.mean())
-
+X[:, 2] = (np.random.uniform(size=X.shape[0]) - 0.5) * 20
 
 fig = plt.figure()
 ax1 = fig.add_subplot(221)
 ax2 = fig.add_subplot(222)
 ax3 = fig.add_subplot(223)
+limits = (-15, 15)
 y_unique = np.unique(y)
 colors = cm.rainbow(np.linspace(0.0, 1.0, y_unique.size))
 for this_y, color in zip(y_unique, colors):
     this_X = X[y == this_y]
     # plt.legend(loc="best")
     for ax, x1, x2 in [(ax1, 0, 1), (ax2, 0, 2), (ax3, 1, 2)]:
+        ax.set_xlim(limits)
+        ax.set_ylim(limits)
         ax.set_title("X%i - X%i" % (x1, x2))
         ax.scatter(this_X[:, x1], this_X[:, x2], c=color, alpha=0.5, label="Class %s" % this_y)
 
@@ -124,11 +118,14 @@ fig.suptitle(plot_name)
 # plt.show()
 plt.savefig(plot_name)
 
-exit()
+# exit()
 
+num_draws = 2000
+num_alternatives = 2
+input_parameters = np.zeros(len(param_map), dtype='float64')
+uf = UF()
 
 weights = np.ones_like(y)
-
 mle = MixedLogitEstimator(X, y, input_parameters, uf, weights, num_alternatives, num_draws, False, 'float64', 'int64')
 initial_cost, initial_error, _ = mle.results(input_parameters)
 
