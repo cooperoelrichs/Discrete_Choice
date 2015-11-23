@@ -85,13 +85,12 @@ class UF(object):
 n_samples = 5000
 centers = [(-2, -2, -2), (2, 2, 2)]
 X, y = make_blobs(
-    n_samples=n_samples, n_features=3, cluster_std=[0.8, 2, 1],
+    n_samples=n_samples, n_features=3, cluster_std=[1, 3, 1],
     centers=centers, shuffle=True, random_state=1
 )
 
-print(X.shape)
-print(y.shape)
-
+y[np.random.random_integers(low=0, high=y.shape[0], size=(y.shape[0] / 20))] = 0
+y[np.random.random_integers(low=0, high=y.shape[0], size=(y.shape[0] / 20))] = 1
 X[:, 2] = (np.random.uniform(size=X.shape[0]) - 0.5) * 20
 
 fig = plt.figure()
@@ -114,8 +113,6 @@ plot_name = 'noisy_data_test'
 fig.suptitle(plot_name)
 # plt.show()
 plt.savefig(plot_name)
-
-# exit()
 
 num_draws = 2000
 num_alternatives = 2
