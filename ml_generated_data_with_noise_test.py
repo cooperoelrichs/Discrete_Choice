@@ -13,34 +13,31 @@ from sklearn.datasets import make_blobs
 
 
 param_map = OrderedDict([(name, i) for i, name in enumerate([
-    '1-bias-random',
+    '0-bias-random',
     # '2-bias-random',
-    '1-1-beta-random',
-    '1-2-beta-random',
-    '1-3-beta-random',
-    '2-1-beta-random',
-    '2-2-beta-random',
-    '2-3-beta-random',
+    '--0-beta-random',
+    '--1-beta-random',
+    '--2-beta-random',
 
-    '1-bias',
+    '0-bias',
     # '2-bias',
+    '0-0-beta',
+    '0-1-beta',
+    '0-2-beta',
+    '1-0-beta',
     '1-1-beta',
     '1-2-beta',
-    '1-3-beta',
-    '2-1-beta',
-    '2-2-beta',
-    '2-3-beta',
 ])])
 
 draw_map = OrderedDict([(name, i) for i, name in enumerate([
-    '1-bias-random',
+    '0-bias-random',
     # '2-bias-random',
-    '1-1-beta-random',
-    '1-2-beta-random',
-    '1-3-beta-random',
-    '2-1-beta-random',
-    '2-2-beta-random',
-    '2-3-beta-random',
+    '--0-beta-random',
+    '--1-beta-random',
+    '--2-beta-random',
+    # '1-0-beta-random',
+    # '1-1-beta-random',
+    # '2-2-beta-random',
 ])])
 
 
@@ -56,24 +53,24 @@ class UF(object):
         # R [obs x B_r x draws]
 
         V = T.set_subtensor(V[:, 0, :], (
-            B[param_map['1-bias']] +
-            B[param_map['1-bias-random']]*R[:, draw_map['1-bias-random'], :] +
-            B[param_map['1-1-beta']]*X[:, 0, np.newaxis] +
-            B[param_map['1-1-beta-random']]*R[:, draw_map['1-1-beta-random'], :]*X[:, 0, np.newaxis] +
-            B[param_map['1-2-beta']]*X[:, 1, np.newaxis] +
-            B[param_map['1-2-beta-random']]*R[:, draw_map['1-2-beta-random'], :]*X[:, 1, np.newaxis] +
-            B[param_map['1-3-beta']]*X[:, 2, np.newaxis] +
-            B[param_map['1-3-beta-random']]*R[:, draw_map['1-3-beta-random'], :]*X[:, 2, np.newaxis]
+            B[param_map['0-bias']] +
+            B[param_map['0-bias-random']]*R[:, draw_map['0-bias-random'], :] +
+            B[param_map['0-0-beta']]*X[:, 0, np.newaxis] +
+            B[param_map['--0-beta-random']]*R[:, draw_map['--0-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['0-1-beta']]*X[:, 1, np.newaxis] +
+            B[param_map['--1-beta-random']]*R[:, draw_map['--1-beta-random'], :]*X[:, 1, np.newaxis] +
+            B[param_map['0-2-beta']]*X[:, 2, np.newaxis] +
+            B[param_map['--2-beta-random']]*R[:, draw_map['--2-beta-random'], :]*X[:, 2, np.newaxis]
         ))
         V = T.set_subtensor(V[:, 1, :], (
             # B[param_map['2-bias']] +
             # B[param_map['2-bias-random']]*R[:, draw_map['2-bias-random'], :] +
-            B[param_map['2-1-beta']]*X[:, 0, np.newaxis] +
-            B[param_map['2-1-beta-random']]*R[:, draw_map['2-1-beta-random'], :]*X[:, 0, np.newaxis] +
-            B[param_map['2-2-beta']]*X[:, 1, np.newaxis] +
-            B[param_map['2-2-beta-random']]*R[:, draw_map['2-2-beta-random'], :]*X[:, 1, np.newaxis] +
-            B[param_map['2-3-beta']]*X[:, 2, np.newaxis] +
-            B[param_map['2-3-beta-random']]*R[:, draw_map['2-3-beta-random'], :]*X[:, 2, np.newaxis]
+            B[param_map['1-0-beta']]*X[:, 0, np.newaxis] +
+            B[param_map['--0-beta-random']]*R[:, draw_map['--0-beta-random'], :]*X[:, 0, np.newaxis] +
+            B[param_map['1-1-beta']]*X[:, 1, np.newaxis] +
+            B[param_map['--1-beta-random']]*R[:, draw_map['--1-beta-random'], :]*X[:, 1, np.newaxis] +
+            B[param_map['1-2-beta']]*X[:, 2, np.newaxis] +
+            B[param_map['--2-beta-random']]*R[:, draw_map['--2-beta-random'], :]*X[:, 2, np.newaxis]
         ))
         return V
 
@@ -88,7 +85,7 @@ class UF(object):
 n_samples = 5000
 centers = [(-2, -2, -2), (2, 2, 2)]
 X, y = make_blobs(
-    n_samples=n_samples, n_features=3, cluster_std=[1, 2, 1],
+    n_samples=n_samples, n_features=3, cluster_std=[0.8, 2, 1],
     centers=centers, shuffle=True, random_state=1
 )
 
