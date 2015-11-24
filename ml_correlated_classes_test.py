@@ -105,7 +105,7 @@ plt.title("Data")
 plt.savefig(title)
 
 # Estimate model
-num_draws = 1000
+num_draws = 2000
 num_alternatives = 3
 input_parameters = np.zeros(len(param_map), dtype='float64')
 uf = UF()
