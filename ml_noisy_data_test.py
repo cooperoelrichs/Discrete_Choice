@@ -89,8 +89,8 @@ X, y = make_blobs(
     centers=centers, shuffle=True, random_state=1
 )
 
-y[np.random.random_integers(low=0, high=y.shape[0], size=(y.shape[0] / 20))] = 0
-y[np.random.random_integers(low=0, high=y.shape[0], size=(y.shape[0] / 20))] = 1
+y[np.random.random_integers(low=0, high=(y.shape[0] - 1), size=(y.shape[0] / 20))] = 0
+y[np.random.random_integers(low=0, high=(y.shape[0] - 1), size=(y.shape[0] / 20))] = 1
 X[:, 2] = (np.random.uniform(size=X.shape[0]) - 0.5) * 20
 
 fig = plt.figure()
